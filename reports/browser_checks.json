@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "checks": [
+    "600 real sample records; 20 rendered rows; sample label",
+    "Client-side page 2 differs from page 1; no products HTTP request on page change",
+    "Search waits for the 300 ms debounce",
+    "Empty results and Clear filters recovery",
+    "Invalid range displays real validation error and recovers",
+    "Category map has three levels; root category returns descendant products",
+    "Product detail uses current API data",
+    "390 px layout has no document-level overflow; table scroll is contained",
+    "Dark theme follows prefers-color-scheme",
+    "Swagger API documentation loads and renders",
+    "Stock saved in first context updates second context through SSE",
+    "Stale stock editor receives conflict instead of overwriting",
+    "Protected product creation; untrusted text is not injected as HTML",
+    "Protected edit and soft archive; active count restored to 600",
+    "Admin key is not persisted to localStorage",
+    "No unhandled JavaScript errors"
+  ]
+}

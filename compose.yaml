@@ -1,0 +1,31 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-flashmarket}
+      MYSQL_USER: ${DB_USER:-flashmarket}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Generate .env with python -m scripts.configure}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Generate .env with python -m scripts.configure}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -u$$MYSQL_USER -e 'SELECT 1' $$MYSQL_DATABASE"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  mysql-data:

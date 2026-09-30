@@ -1,8 +1,12 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 node_modules/
-build/
-dist/
-coverage/
+test-results/
 .DS_Store
 *.log
-.env*
-!.env.example
