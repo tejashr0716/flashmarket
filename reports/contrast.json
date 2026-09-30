@@ -1,0 +1,89 @@
+{
+  "pairs": [
+    {
+      "pair": "body",
+      "ratio": 13.979022254433707,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "secondary",
+      "ratio": 6.349621306761344,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "primary button",
+      "ratio": 5.474352417005371,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "stock positive",
+      "ratio": 4.903338190812781,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "stock low",
+      "ratio": 5.188480939892621,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "stock out",
+      "ratio": 5.0502672717574635,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "input boundary",
+      "ratio": 3.531075827690111,
+      "minimum": 3,
+      "passed": true
+    },
+    {
+      "pair": "dark body",
+      "ratio": 16.29325535858735,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "dark secondary",
+      "ratio": 7.946016296914315,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "dark button",
+      "ratio": 7.91504743719565,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "dark positive",
+      "ratio": 7.099030445727802,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "dark low",
+      "ratio": 7.251032725750533,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "dark out",
+      "ratio": 6.483073808145907,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "pair": "dark input boundary",
+      "ratio": 4.578948212221155,
+      "minimum": 3,
+      "passed": true
+    }
+  ],
+  "note": "Defined color pairs, not a complete accessibility certification."
+}

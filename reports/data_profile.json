@@ -1,0 +1,18 @@
+{
+  "grain": "one measured HTTP request",
+  "rows": 1500,
+  "duplicate_keys": 0,
+  "null_cells": 0,
+  "scenario_rows": {
+    "full_catalog": 300,
+    "four_facets": 300,
+    "root_category": 300,
+    "literal_search": 300,
+    "stock_sort": 300
+  },
+  "http_status_counts": {
+    "200": 1500
+  },
+  "nonnegative_latency": true,
+  "method": "Direct CSV grain, null, duplicate, status and range checks; bundled profiler unavailable in refreshed workspace."
+}

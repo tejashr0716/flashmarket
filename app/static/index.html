@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Flash Market — a real FastAPI and MySQL catalog with live inventory updates.">
+  <meta name="color-scheme" content="light dark">
+  <title>Flash Market · Catalog & Inventory</title>
+  <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#catalog">Skip to catalog</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="wordmark" href="/" aria-label="Flash Market home">
+        <img src="/static/mark.svg" alt="" width="36" height="36">
+        <span>Flash<span class="wordmark-light"> Market</span></span>
+      </a>
+      <nav aria-label="Primary">
+        <a href="#catalog" class="active">Catalog</a>
+        <button type="button" id="category-map-button">Category map</button>
+        <a href="/docs" target="_blank" rel="noopener">API docs <span aria-hidden="true">↗</span></a>
+      </nav>
+      <div class="header-actions">
+        <span class="live-status" id="live-status"><span class="status-dot"></span><span id="live-label">Connecting</span></span>
+        <button type="button" class="button button-secondary" id="admin-button">Unlock inventory</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">CATALOG & INVENTORY</p>
+        <h1 id="page-title">Your inventory. <span>In sync.</span></h1>
+        <p class="intro-copy">Find products, manage availability, and see stock changes across sessions.</p>
+      </div>
+      <div class="sample-note"><span class="sample-dot"></span><div><strong>Sample catalog</strong><span>Fictional products · Prices in INR</span></div></div>
+    </section>
+
+    <section class="metrics" aria-label="Live catalog totals">
+      <button type="button" class="metric" id="metric-all">
+        <span class="metric-label">Total products <span aria-hidden="true">↗</span></span>
+        <strong id="stat-total">—</strong><span class="metric-caption" id="stat-samples">Reading from MySQL</span>
+      </button>
+      <button type="button" class="metric" id="metric-low">
+        <span class="metric-label">Low stock <span class="metric-icon warning" aria-hidden="true">!</span></span>
+        <strong id="stat-low">—</strong><span class="metric-caption">1–5 units · View products</span>
+      </button>
+      <button type="button" class="metric" id="metric-out">
+        <span class="metric-label">Out of stock <span class="metric-icon danger" aria-hidden="true">−</span></span>
+        <strong id="stat-out">—</strong><span class="metric-caption">0 units · View products</span>
+      </button>
+      <article class="metric">
+        <span class="metric-label">Inventory value <span class="metric-icon blue" aria-hidden="true">₹</span></span>
+        <strong id="stat-value">—</strong><span class="metric-caption" id="stat-units">Price × available units</span>
+      </article>
+    </section>
+
+    <section class="catalog-panel" id="catalog" aria-labelledby="catalog-title">
+      <div class="panel-heading">
+        <div><h2 id="catalog-title">Product catalog</h2><p id="result-summary" aria-live="polite">Loading products…</p></div>
+        <div class="panel-actions">
+          <button type="button" class="button button-secondary" id="refresh-button"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 7a6.5 6.5 0 1 0 .2 5M16 3v4h-4" stroke-linecap="round" stroke-linejoin="round"/></svg> Refresh</button>
+          <button type="button" class="button button-primary" id="add-button"><span aria-hidden="true">+</span> Add product</button>
+        </div>
+      </div>
+      <form id="filters" class="filters" role="search" aria-label="Filter catalog">
+        <div class="filter-row">
+          <label class="search-field">Search
+            <input id="search" name="search" type="search" maxlength="100" placeholder="Product, SKU, or brand…" autocomplete="off">
+          </label>
+          <fieldset class="price-field">
+            <legend>Price range · ₹</legend>
+            <div class="price-inputs">
+              <input id="min-price" type="number" min="0" max="99999999.99" step="0.01" placeholder="Min" aria-label="Minimum price in INR">
+              <span aria-hidden="true">–</span>
+              <input id="max-price" type="number" min="0" max="99999999.99" step="0.01" placeholder="Max" aria-label="Maximum price in INR">
+            </div>
+          </fieldset>
+          <label>Availability
+            <select id="stock"><option value="all">All stock</option><option value="in">In stock (&gt;0)</option><option value="low">Low stock (1–5)</option><option value="out">Out of stock (0)</option></select>
+          </label>
+          <label>Brand<select id="brand"><option value="">All brands</option></select></label>
+          <label>Minimum rating
+            <select id="rating"><option value="">Any rating</option><option value="3">3.0 and above</option><option value="3.5">3.5 and above</option><option value="4">4.0 and above</option><option value="4.5">4.5 and above</option></select>
+          </label>
+        </div>
+        <div class="filter-secondary">
+          <label class="category-field">Category · includes descendants
+            <select id="category"><option value="">All categories</option></select>
+          </label>
+          <label class="sort-field">Sort by
+            <select id="sort"><option value="newest">Newest first</option><option value="name">Product name</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="rating_desc">Highest rating</option><option value="stock_desc">Most stock</option></select>
+          </label>
+          <button type="button" class="clear-button" id="clear-button">Clear filters</button>
+          <span class="load-note" id="load-note">MySQL-backed results</span>
+        </div>
+      </form>
+      <div class="error-box" id="catalog-error" role="alert" hidden><span id="error-message"></span><button type="button" class="button button-secondary" id="retry-button">Retry</button></div>
+      <div class="table-scroll" id="table-scroll" tabindex="0" aria-label="Product table, scroll horizontally on small screens">
+        <table>
+          <thead><tr><th scope="col">Product</th><th scope="col">Brand</th><th scope="col" class="numeric">Price</th><th scope="col">Availability</th><th scope="col" class="numeric">Rating</th><th scope="col">Inventory</th></tr></thead>
+          <tbody id="products-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="empty-state" hidden><strong>No matching products</strong><p>Try a wider price range or clear a filter.</p><button type="button" class="button button-secondary" id="empty-clear">Clear filters</button></div>
+      <footer class="pagination">
+        <span id="page-summary">20 products per page</span>
+        <div class="page-controls"><button type="button" class="button button-secondary" id="previous-page" aria-label="Previous page">←</button><span id="page-number">Page 1</span><button type="button" class="button button-secondary" id="next-page" aria-label="Next page">→</button></div>
+      </footer>
+    </section>
+    <div class="bottom-notes">
+      <p><span class="mini-dot"></span><span id="event-note">Stock updates are delivered through server-sent events.</span></p>
+      <a href="https://github.com/tejashr0716/flashmarket" target="_blank" rel="noopener">View source on GitHub ↗</a>
+    </div>
+    <noscript><p class="error-box">Enable JavaScript for the catalog interface. The REST API remains available at <a href="/docs">/docs</a>.</p></noscript>
+  </main>
+
+  <dialog id="auth-dialog" aria-labelledby="auth-title">
+    <form id="auth-form">
+      <div class="dialog-heading"><h2 id="auth-title">Unlock inventory</h2><button type="button" class="icon-button" data-close="auth-dialog" aria-label="Close">×</button></div>
+      <p class="dialog-copy">Use the admin key configured for this deployment. It stays in this tab’s memory and is never saved to browser storage.</p>
+      <label>Admin key<input id="admin-key" type="password" autocomplete="off" required minlength="32"></label>
+      <p class="form-error" id="auth-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button button-secondary" data-close="auth-dialog">Cancel</button><button type="submit" class="button button-primary">Unlock</button></div>
+    </form>
+  </dialog>
+  <dialog id="stock-dialog" aria-labelledby="stock-title">
+    <form id="stock-form">
+      <div class="dialog-heading"><h2 id="stock-title">Adjust stock</h2><button type="button" class="icon-button" data-close="stock-dialog" aria-label="Close">×</button></div>
+      <p class="dialog-copy" id="stock-product"></p>
+      <label>Available units<input id="stock-units" type="number" min="0" max="100000" step="1" required></label>
+      <label>Reason<input id="stock-reason" type="text" minlength="3" maxlength="120" value="Manual adjustment" required></label>
+      <p class="dialog-hint">Saved in a transaction with an audit event. Other connected sessions refresh automatically.</p>
+      <p class="form-error" id="stock-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button button-secondary" data-close="stock-dialog">Cancel</button><button type="submit" class="button button-primary">Save stock</button></div>
+    </form>
+  </dialog>
+  <dialog id="product-dialog" class="wide-dialog" aria-labelledby="product-form-title">
+    <form id="product-form">
+      <div class="dialog-heading"><h2 id="product-form-title">Add product</h2><button type="button" class="icon-button" data-close="product-dialog" aria-label="Close">×</button></div>
+      <div class="form-grid">
+        <label class="full-width">Product name<input id="product-name" type="text" minlength="3" maxlength="160" required></label>
+        <label>SKU<input id="product-sku" type="text" minlength="3" maxlength="32" pattern="[A-Z0-9][A-Z0-9\-]+" placeholder="FM-CUSTOM-001" required></label>
+        <label>Brand<select id="product-brand" required></select></label>
+        <label class="full-width">Third-level category<select id="product-category" required></select></label>
+        <label>Price · ₹<input id="product-price" type="number" min="0" max="99999999.99" step="0.01" required></label>
+        <label>Initial stock<input id="product-stock" type="number" min="0" max="100000" step="1" required></label>
+        <label>Rating · 0–5<input id="product-rating" type="number" min="0" max="5" step="0.1" value="0" required></label>
+        <label class="full-width">Description<textarea id="product-description" maxlength="1000" rows="3"></textarea></label>
+      </div>
+      <p class="dialog-hint" id="product-hint">New products are marked as user-created, not sample records.</p>
+      <p class="form-error" id="product-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button button-secondary" data-close="product-dialog">Cancel</button><button type="submit" class="button button-primary" id="product-save">Create product</button></div>
+    </form>
+  </dialog>
+  <dialog id="detail-dialog" class="wide-dialog" aria-labelledby="detail-title">
+    <div class="dialog-heading"><h2 id="detail-title">Product</h2><button type="button" class="icon-button" data-close="detail-dialog" aria-label="Close">×</button></div>
+    <p class="detail-sku" id="detail-sku"></p><p class="dialog-copy" id="detail-description"></p>
+    <dl class="detail-grid" id="detail-fields"></dl>
+    <div class="dialog-actions wrap-actions"><button type="button" class="button button-danger" id="archive-button">Archive</button><button type="button" class="button button-secondary" id="edit-button">Edit product</button><button type="button" class="button button-primary" id="detail-stock-button">Adjust stock</button></div>
+  </dialog>
+  <dialog id="archive-dialog" aria-labelledby="archive-title">
+    <form id="archive-form">
+      <div class="dialog-heading"><h2 id="archive-title">Archive product?</h2><button type="button" class="icon-button" data-close="archive-dialog" aria-label="Close">×</button></div>
+      <p class="dialog-copy" id="archive-name"></p>
+      <p class="dialog-hint">The product will disappear from the active catalog. Its inventory event history remains in MySQL.</p>
+      <p class="form-error" id="archive-error" role="alert"></p>
+      <div class="dialog-actions"><button type="button" class="button button-secondary" data-close="archive-dialog">Cancel</button><button type="submit" class="button button-danger">Archive product</button></div>
+    </form>
+  </dialog>
+  <dialog id="categories-dialog" class="wide-dialog" aria-labelledby="categories-title">
+    <div class="dialog-heading"><h2 id="categories-title">Three levels. One catalog.</h2><button type="button" class="icon-button" data-close="categories-dialog" aria-label="Close">×</button></div>
+    <p class="dialog-copy">Choose any category to include all of its descendants. The backend resolves the subtree with a recursive MySQL CTE.</p>
+    <div id="category-tree" class="category-tree"></div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

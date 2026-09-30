@@ -1,0 +1,80 @@
+{
+  "measured_at_utc": "2026-09-30T15:24:38.942263+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "concurrency": 10,
+  "warmup_per_scenario": 20,
+  "catalog": {
+    "total_products": 600,
+    "in_stock": 546,
+    "low_stock": 78,
+    "out_of_stock": 54,
+    "total_units": 30355,
+    "inventory_value": 1816013778.41,
+    "sample_products": 600
+  },
+  "database": {
+    "status": "ok",
+    "database": "mysql",
+    "mysql_version": "8.4.11"
+  },
+  "environment": {
+    "platform": "Linux-6.18.49-x86_64-with-glibc2.34",
+    "python": "3.13.14",
+    "logical_cpus": 2,
+    "cpu_quota": "max 100000",
+    "memory_limit_bytes": "4294967296"
+  },
+  "method": "Nearest-rank percentiles; full HTTP response body read; warmups excluded; localhost client and server",
+  "scenarios": {
+    "full_catalog": {
+      "path": "/api/products?limit=1000",
+      "requests": 300,
+      "errors": 0,
+      "p50_ms": 199.31295399999271,
+      "p95_ms": 311.7530089999718,
+      "p99_ms": 373.30959500002336,
+      "max_ms": 402.0585859999528
+    },
+    "four_facets": {
+      "path": "/api/products?min_price=1000&max_price=80000&stock=in&brand_id=1&brand_id=2&min_rating=3.5&limit=100",
+      "requests": 300,
+      "errors": 0,
+      "p50_ms": 49.53841300005024,
+      "p95_ms": 68.51219099996797,
+      "p99_ms": 80.80327599998327,
+      "max_ms": 96.02033600003779
+    },
+    "root_category": {
+      "path": "/api/products?category_id=1&limit=1000",
+      "requests": 300,
+      "errors": 0,
+      "p50_ms": 71.24525200003973,
+      "p95_ms": 111.11685899993518,
+      "p99_ms": 136.6492180000023,
+      "max_ms": 157.55776399998922
+    },
+    "literal_search": {
+      "path": "/api/products?search=Studio&limit=1000",
+      "requests": 300,
+      "errors": 0,
+      "p50_ms": 56.76008699992963,
+      "p95_ms": 80.05968299994493,
+      "p99_ms": 86.4612830000624,
+      "max_ms": 97.72658700001102
+    },
+    "stock_sort": {
+      "path": "/api/products?stock=low&sort=stock_desc&limit=100",
+      "requests": 300,
+      "errors": 0,
+      "p50_ms": 46.75756599999659,
+      "p95_ms": 66.91805499997372,
+      "p99_ms": 121.74904899995909,
+      "max_ms": 138.07180599997082
+    }
+  },
+  "worst_scenario_p95_ms": 311.7530089999718,
+  "all_requests_under_400_ms": false,
+  "total_requests": 1500,
+  "total_errors": 0,
+  "caveat": "Local measurements on synthetic data, not a production SLA or an internet-latency guarantee."
+}

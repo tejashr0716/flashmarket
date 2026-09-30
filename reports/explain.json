@@ -1,0 +1,120 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "16.94"
+    },
+    "ordering_operation": {
+      "using_filesort": true,
+      "nested_loop": [
+        {
+          "table": {
+            "table_name": "b",
+            "access_type": "const",
+            "possible_keys": [
+              "PRIMARY"
+            ],
+            "key": "PRIMARY",
+            "used_key_parts": [
+              "id"
+            ],
+            "key_length": "4",
+            "ref": [
+              "const"
+            ],
+            "rows_examined_per_scan": 1,
+            "rows_produced_per_join": 1,
+            "filtered": "100.00",
+            "cost_info": {
+              "read_cost": "0.00",
+              "eval_cost": "0.10",
+              "prefix_cost": "0.00",
+              "data_read_per_join": "328"
+            },
+            "used_columns": [
+              "id",
+              "name"
+            ]
+          }
+        },
+        {
+          "table": {
+            "table_name": "p",
+            "access_type": "ref",
+            "possible_keys": [
+              "fk_product_category",
+              "fk_product_brand",
+              "idx_products_catalog_price",
+              "idx_products_category_price",
+              "idx_products_brand_price"
+            ],
+            "key": "fk_product_brand",
+            "used_key_parts": [
+              "brand_id"
+            ],
+            "key_length": "4",
+            "ref": [
+              "const"
+            ],
+            "rows_examined_per_scan": 76,
+            "rows_produced_per_join": 5,
+            "filtered": "6.91",
+            "cost_info": {
+              "read_cost": "7.50",
+              "eval_cost": "0.53",
+              "prefix_cost": "15.10",
+              "data_read_per_join": "24K"
+            },
+            "used_columns": [
+              "id",
+              "sku",
+              "name",
+              "description",
+              "category_id",
+              "brand_id",
+              "price",
+              "stock",
+              "rating",
+              "version",
+              "is_active",
+              "is_sample",
+              "created_at",
+              "updated_at"
+            ],
+            "attached_condition": "((`flashmarket`.`p`.`is_active` = 1) and (`flashmarket`.`p`.`price` >= 1000.00) and (`flashmarket`.`p`.`price` <= 80000.00) and (`flashmarket`.`p`.`rating` >= 3.5) and (`flashmarket`.`p`.`stock` > 0))"
+          }
+        },
+        {
+          "table": {
+            "table_name": "c",
+            "access_type": "eq_ref",
+            "possible_keys": [
+              "PRIMARY"
+            ],
+            "key": "PRIMARY",
+            "used_key_parts": [
+              "id"
+            ],
+            "key_length": "4",
+            "ref": [
+              "flashmarket.p.category_id"
+            ],
+            "rows_examined_per_scan": 1,
+            "rows_produced_per_join": 5,
+            "filtered": "100.00",
+            "cost_info": {
+              "read_cost": "1.31",
+              "eval_cost": "0.53",
+              "prefix_cost": "16.94",
+              "data_read_per_join": "1K"
+            },
+            "used_columns": [
+              "id",
+              "name"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
