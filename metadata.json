@@ -1,6 +1,0 @@
-{
-  "name": "ProductHub",
-  "description": "Comprehensive product catalog and inventory management system with real-time stock tracking, category and brand organization, and sophisticated dashboard analytics.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
