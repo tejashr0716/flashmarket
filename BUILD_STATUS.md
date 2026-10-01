@@ -1,6 +1,6 @@
 # Build status
 
-The rebuilt application and downloadable source are complete. This is a tested local build, not a published website.
+The rebuilt application is published on GitHub main and is live at [https://flashmarket-tejashr0716.onrender.com](https://flashmarket-tejashr0716.onrender.com). The deployed Docker service uses real MySQL 8.4.8, not browser storage or SQLite.
 
 ## Verified results
 
@@ -13,16 +13,21 @@ The rebuilt application and downloadable source are complete. This is a tested l
 
 Measurements are local, on synthetic data, and do not establish public-host latency, a production SLA, or historical performance during the dates shown on a resume. See `docs/VERIFICATION.md` and `reports/` for method and raw evidence.
 
-## Publication and remaining authorization
+## Published source and live deployment
 
-- The original is backed up on `legacy/frontend-prototype-2026-09-30`. The replacement branch is in progress; bulk MCP upload was blocked, and website publication is authorized.
-- No public deployment has been created. The free-tier hosting route is authorized; account setup and public deployment are still in progress.
-- Use this ZIP for the rebuilt implementation until GitHub is updated. Deployment and safe backup instructions are in `docs/DEPLOYMENT.md`.
+- The replacement was squash-merged into `main` through [PR #1](https://github.com/tejashr0716/flashmarket/pull/1), commit `c29cfd348ef5fb9988603550ad47bb5082b749bf`. No force-push was used.
+- The original is preserved on `legacy/frontend-prototype-2026-09-30`, commit `4d386896f4e5cec455ff2842f1672caa56d01bfd`.
+- Initial source publication was independently verified: all 51 core files were present, no obsolete frontend files remained, and GitHub CI passed. Final delivery also includes live-check reports and screenshots.
+- The live service uses **Render Free** in Singapore plus **Aiven Free MySQL**. The Free compute plan and “No card on file” were verified during creation. No paid upgrades or unrelated service changes were made.
+- **15 live API checks and 15 live browser checks passed**, including filtering, real MySQL/TLS, protected writes, stale-version rejection, genuine two-tab SSE updates, 20-item client pagination, debounced search, and interactive Swagger.
+- Sample product 600 was returned to its original stock of **51** after the reversible test; its version advanced from **0 to 2**.
+- The public four-facet verification request took **716.20 ms** in one sample. It is not an SLA and does not replace the recorded local benchmark.
+- Deployment and safe backup instructions are in `docs/DEPLOYMENT.md`.
 
 ## Validation limits
 
-- Docker configuration is provided, but no Docker daemon was available, so a Docker build/deployment was not validated here.
-- Desktop/mobile previews were visually reviewed in the initial build. Final modal screenshots were generated, but final manual screenshot inspection was unavailable after the environment refreshed. The automated interaction checks passed.
+- A local Docker daemon was unavailable; however, Render successfully built and ran the repository’s Docker image and the live checks passed.
+- Live desktop and mobile screens were reviewed. Automated interactions passed; this is not a complete manual visual audit of every modal.
 - Fourteen defined text/background contrast pairs passed; this is not a complete accessibility audit.
 - One Starlette/httpx compatibility deprecation warning remains; it did not fail tests.
 

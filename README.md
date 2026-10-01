@@ -4,6 +4,18 @@ A real **Python / FastAPI / MySQL** project with a framework-free **HTML5, CSS3,
 
 This is an interview-sized portfolio project, not a production commerce platform. Its **600 products, eight brands, prices, and ratings are synthetic sample data**, clearly labelled in the UI. Example prices are in INR.
 
+## Live demo
+
+- **Catalog:** [https://flashmarket-tejashr0716.onrender.com](https://flashmarket-tejashr0716.onrender.com)
+- **Interactive API documentation:** [https://flashmarket-tejashr0716.onrender.com/docs](https://flashmarket-tejashr0716.onrender.com/docs)
+- **Database health:** [https://flashmarket-tejashr0716.onrender.com/health](https://flashmarket-tejashr0716.onrender.com/health)
+
+The public demo runs **FastAPI in Docker on Render Free** and **MySQL 8.4.8 on Aiven Free**. The database connection verifies its TLS certificate and hostname; the application user is limited to the project database. All 600 initial products are labelled fictional samples.
+
+Public visitors can browse. To manage inventory, open your [Render service dashboard](https://dashboard.render.com/web/srv-daumn3c1nsns73et4leg), go to **Environment**, reveal your private `ADMIN_API_KEY`, and enter it in **Unlock inventory**. Do not put the key in a URL, screenshot, resume, chat, or source control. Reloading the tab clears it from browser memory.
+
+Free services can sleep or pause under their quotas. Open the demo before an interview. **The under-400-ms evidence is a scoped local benchmark, not a promise for this free public host.** See [deployment verification](reports/deployment_verification.json), [verification notes](docs/VERIFICATION.md), and [free-tier guidance](docs/DEPLOYMENT.md).
+
 ## What you can demonstrate
 
 | Feature | Implementation / evidence |

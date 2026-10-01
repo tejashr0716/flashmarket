@@ -1,0 +1,75 @@
+{
+  "verified_at_utc": "2026-10-01T05:10:23.100303+00:00",
+  "site_url": "https://flashmarket-tejashr0716.onrender.com",
+  "all_passed": true,
+  "method": "Light live HTTPS and TLS SQL checks; no load test",
+  "checks": [
+    {
+      "name": "Real MySQL health",
+      "passed": true,
+      "mysql_version": "8.4.8"
+    },
+    {
+      "name": "600 labelled samples",
+      "passed": true
+    },
+    {
+      "name": "Catalog rows from API",
+      "passed": true
+    },
+    {
+      "name": "Three-level taxonomy",
+      "passed": true
+    },
+    {
+      "name": "Recursive category filter",
+      "passed": true,
+      "matched_products": 204
+    },
+    {
+      "name": "Four-facet filter",
+      "passed": true,
+      "matched_products": 38,
+      "single_request_elapsed_ms": 716.2,
+      "not_a_latency_guarantee": true
+    },
+    {
+      "name": "Literal SQL wildcard search",
+      "passed": true
+    },
+    {
+      "name": "Invalid price range rejected",
+      "passed": true
+    },
+    {
+      "name": "Anonymous admin access blocked",
+      "passed": true
+    },
+    {
+      "name": "Anonymous write blocked",
+      "passed": true
+    },
+    {
+      "name": "Private administrator authentication",
+      "passed": true
+    },
+    {
+      "name": "OpenAPI schema published",
+      "passed": true
+    },
+    {
+      "name": "Swagger HTML served",
+      "passed": true
+    },
+    {
+      "name": "Deployed JavaScript equals tested source",
+      "passed": true
+    },
+    {
+      "name": "Verified TLS and database-scoped user",
+      "passed": true,
+      "tls_cipher": "TLS_AES_128_GCM_SHA256",
+      "application_database": "flashmarket"
+    }
+  ]
+}

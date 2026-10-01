@@ -1,0 +1,55 @@
+{
+  "verified_at_utc": "2026-10-01T05:41:30.928066+00:00",
+  "live_url": "https://flashmarket-tejashr0716.onrender.com",
+  "api_docs_url": "https://flashmarket-tejashr0716.onrender.com/docs",
+  "health_url": "https://flashmarket-tejashr0716.onrender.com/health",
+  "core_code_commit": "c29cfd348ef5fb9988603550ad47bb5082b749bf",
+  "initial_deploy_id": "dep-daumn3s1nsns73et4n60",
+  "initial_deploy_status": "live",
+  "render": {
+    "service_id": "srv-daumn3c1nsns73et4leg",
+    "runtime": "docker",
+    "plan": "free",
+    "region": "singapore",
+    "health_check_path": "/health",
+    "paid_upgrades": false,
+    "payment_method_at_creation": "No card on file (verified in dashboard)"
+  },
+  "mysql": {
+    "provider": "Aiven",
+    "plan": "free-1-1gb",
+    "version": "8.4.8",
+    "database": "flashmarket",
+    "certificate_and_hostname_verified": true,
+    "application_user_database_scoped": true
+  },
+  "live_api_checks_passed": 15,
+  "live_browser_checks_passed": 15,
+  "sample_stock_fixture": {
+    "name": "Fixture restored and both tabs synchronized",
+    "passed": true,
+    "stock_before": 51,
+    "stock_after": 51,
+    "version_before": 0,
+    "version_after": 2
+  },
+  "performance": {
+    "local_four_facet_p95_ms": 68.51,
+    "local_four_facet_max_ms": 96.02,
+    "local_four_facet_requests": 300,
+    "local_all_scenarios_requests": 1500,
+    "local_full_catalog_max_ms": 402.06,
+    "live_single_four_facet_sample_ms": 716.2,
+    "public_host_sla": false
+  },
+  "legacy_backup_branch": "legacy/frontend-prototype-2026-09-30",
+  "legacy_backup_commit": "4d386896f4e5cec455ff2842f1672caa56d01bfd",
+  "force_push_used": false,
+  "unrelated_services_modified": false,
+  "limitations": [
+    "Free hosting can sleep or be paused under quotas",
+    "Local benchmark is not a public-host latency guarantee",
+    "No full accessibility audit",
+    "Historical resume dates are not verified by this rebuild"
+  ]
+}

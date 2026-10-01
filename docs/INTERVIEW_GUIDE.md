@@ -2,6 +2,14 @@
 
 Use this guide to understand the actual code. Do not memorize answers you cannot demonstrate. Sample products and measured local performance are not real customers or production traffic.
 
+## Your published demonstration
+
+Open the [live catalog](https://flashmarket-tejashr0716.onrender.com), [Swagger UI](https://flashmarket-tejashr0716.onrender.com/docs), and [real MySQL health endpoint](https://flashmarket-tejashr0716.onrender.com/health). Before the interview, allow the free host time to wake and check that the database is available.
+
+For inventory operations, retrieve your private `ADMIN_API_KEY` from your [Render service](https://dashboard.render.com/web/srv-daumn3c1nsns73et4leg) under **Environment**. Enter it in **Unlock inventory** in the first tab; leave a second tab read-only to demonstrate server-driven stock updates. Never screen-share the key or database credentials.
+
+**Performance wording:** the local four-facet benchmark covered 300 requests at concurrency 10, with p95 68.51 ms and maximum 96.02 ms. One unrelated full-catalog request reached 402.06 ms. A lightweight live four-facet check took 716.20 ms in one sample. Therefore, explain “under 400 ms” as the measured local four-facet result, not a universal claim for free hosting. Do not fabricate the original May–October 2025 dates, customer usage, or personal contributions.
+
 ## A short project explanation
 
 “Flash Market is a catalog and inventory API built with FastAPI and MySQL. It stores 600 synthetic products in a three-level category tree. I wrote an explicit parameterized query builder to combine price, stock, brand, and rating filters, and used a recursive CTE to include category descendants. A vanilla JavaScript UI debounces search by 300 ms and paginates results at 20 products per page. Stock writes use transactions and version checks; SSE delivers change events to other sessions.”

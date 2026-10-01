@@ -101,8 +101,18 @@ The raw CSV was independently recomputed and checked against the summary: 1,500 
 
 ### Delivery and visual-review limits
 
-The source is ready, but it has **not been pushed or publicly deployed**. The original is backed up, and the replacement branch is in progress. Website publication and free-tier hosting are authorized; neither the replacement on main nor public deployment is complete.
+The replacement source is **published on GitHub main** through PR #1, commit `c29cfd348ef5fb9988603550ad47bb5082b749bf`, with all 51 expected files and zero obsolete frontend files. GitHub CI passed. The original remains preserved on `legacy/frontend-prototype-2026-09-30`; no force-push was used. The public service is now **live** at [https://flashmarket-tejashr0716.onrender.com](https://flashmarket-tejashr0716.onrender.com), using Render Free and Aiven Free MySQL 8.4.8. Both certificate and hostname verification are enabled, and the application database user is scoped to the project database.
 
-The Docker configuration has not been built or run here because a Docker daemon was unavailable. Desktop/mobile previews were reviewed during the initial build. Final modal screenshots were generated, but their manual inspection was unavailable after the environment refreshed. Browser interaction checks passed; do not interpret that as a full manual visual or accessibility audit.
+A local Docker daemon was unavailable, but Render successfully built and ran the Docker image. Live desktop/mobile screens were reviewed and the browser interactions passed. This is not a complete manual visual or accessibility audit of every modal.
 
 Current measurements do not verify the original May–October 2025 dates or historical metrics. Use only dates and contributions you can truthfully explain. The fictional seed catalog is demonstration data, not customer usage.
+
+## Live deployment verification
+
+- **15 live API checks passed**: real MySQL, 600 sample rows, three-level taxonomy, recursive category filtering, all four facets, literal wildcard search, validation, protected writes, OpenAPI, source-byte match, and verified TLS/database-scoped privileges.
+- **15 live browser checks passed**: desktop/mobile rendering, 20-row client pagination with no extra catalog request, debounce, recursive filtering, private inventory unlock, no key in browser storage, UI stock writes, second-tab SSE propagation, stale-write rejection, restored fixture, reload clearing the key, viewport fit, and interactive Swagger.
+- The reversible test changed sample product 600 from stock 51 to 52 and back to 51. Version advanced from 0 to 2; no user-created product was used.
+- One live four-facet sample took **716.20 ms**. This is neither a public-host benchmark distribution nor an SLA. Local results above remain separately scoped.
+- Evidence: `reports/live_api_checks.json`, `reports/live_browser_checks.json`, `reports/deployment_verification.json`, and the live screenshots in `reports/screenshots/`.
+
+No real credentials are included in these reports or the source archive. Free-tier sleep, quota suspension, and database inactivity remain operational limits.

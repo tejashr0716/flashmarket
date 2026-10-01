@@ -2,6 +2,25 @@
 
 The code is deployable, but a GitHub repository alone is **not** a live FastAPI/MySQL service. Hosting needs a Python/container service, a persistent MySQL database, and account access. Do not put database URLs or admin keys in source control.
 
+## Published demo and owner access
+
+| Item | Current deployment |
+| --- | --- |
+| Application | [https://flashmarket-tejashr0716.onrender.com](https://flashmarket-tejashr0716.onrender.com) |
+| Swagger / OpenAPI UI | [https://flashmarket-tejashr0716.onrender.com/docs](https://flashmarket-tejashr0716.onrender.com/docs) |
+| Health | [https://flashmarket-tejashr0716.onrender.com/health](https://flashmarket-tejashr0716.onrender.com/health) |
+| App host | Render Free, Docker runtime, Singapore |
+| Database | Aiven Free MySQL 8.4.8, persistent external storage |
+| TLS | Certificate and hostname verification enabled |
+| Database permissions | Application user scoped to `flashmarket` |
+| Startup | `./start.sh`: additive schema, seed-once bootstrap, then one Uvicorn worker |
+
+**To unlock inventory:** use your [Render service dashboard](https://dashboard.render.com/web/srv-daumn3c1nsns73et4leg) → **Environment** → reveal `ADMIN_API_KEY`. Enter it only in the application’s **Unlock inventory** dialog. The private deployment key is not included in this repository or ZIP; local `.env` generation creates a different key for your local instance.
+
+The deployed Docker image was successfully built and run. Live API/UI verification and a reversible stock test are recorded in `reports/deployment_verification.json`, `reports/live_api_checks.json`, and `reports/live_browser_checks.json`. Public readers cannot change inventory without the key.
+
+For future changes, keep credentials in Render’s private environment settings. The service tracks `main` with auto-deploy configured. Monitor the next deployment after a code push, verify `/health`, and confirm that existing stock was not reseeded. Do not upgrade the compute plan, attach paid storage, or change other services without explicit approval.
+
 ## Free-tier route: Render + Aiven MySQL
 
 Use **Render Free** for the application and **Aiven Free MySQL** for persistent data. Choose the free plan explicitly, not a credit-limited database trial. These are demo tiers with sleep and usage limits, not production availability guarantees.
