@@ -13,6 +13,85 @@ const state = {
   abort: null, generation: 0, searchTimer: null, eventTimer: null, toastTimer: null,
 };
 
+class ClientResponseCache {
+  constructor(defaultTtlMs = 60000) {
+    this.defaultTtl = defaultTtlMs;
+    this.cache = new Map();
+    this.inFlight = new Map();
+    this.epoch = 0;
+    this.nextId = 0;
+  }
+
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt || entry.epoch !== this.epoch) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  set(key, data, requestEpoch, ttlMs = this.defaultTtl) {
+    // Stale repopulation guard: drop if epoch changed while request was in-flight
+    if (requestEpoch !== this.epoch) {
+      return;
+    }
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs, epoch: requestEpoch });
+  }
+
+  getInFlight(key) {
+    const flight = this.inFlight.get(key);
+    if (!flight) return null;
+    // Obsolete in-flight guard: do not join work started before latest invalidation
+    if (flight.epoch !== this.epoch) {
+      return null;
+    }
+    return flight.promise;
+  }
+
+  setInFlight(key, promise, epoch) {
+    const id = ++this.nextId;
+    this.inFlight.set(key, { promise, epoch, id });
+    return id;
+  }
+
+  clearInFlight(key, id) {
+    const current = this.inFlight.get(key);
+    // Order guard: only delete if current matches this exact request ID
+    if (current && current.id === id) {
+      this.inFlight.delete(key);
+    }
+  }
+
+  invalidate(pattern) {
+    this.epoch++;
+    if (!pattern) {
+      this.cache.clear();
+      this.inFlight.clear();
+      return;
+    }
+    for (const key of this.cache.keys()) {
+      if (key.includes(pattern)) {
+        this.cache.delete(key);
+      }
+    }
+    for (const key of this.inFlight.keys()) {
+      if (key.includes(pattern)) {
+        this.inFlight.delete(key);
+      }
+    }
+  }
+
+  clear() {
+    this.epoch++;
+    this.cache.clear();
+    this.inFlight.clear();
+  }
+}
+
+const responseCache = new ClientResponseCache();
+
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -21,20 +100,59 @@ function element(tag, className, text) {
 }
 
 async function request(path, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const isCacheable = method === "GET" && !options.headers?.["X-Admin-Key"];
+  const reqEpoch = responseCache.epoch;
+
+  if (isCacheable) {
+    const cached = responseCache.get(path);
+    if (cached) return JSON.parse(JSON.stringify(cached));
+    const flight = responseCache.getInFlight(path);
+    if (flight && !options.signal) {
+      return flight.then((data) => JSON.parse(JSON.stringify(data)));
+    }
+  }
+
   const headers = { ...options.headers };
   if (options.body) headers["Content-Type"] = "application/json";
-  const response = await fetch(path, { ...options, headers });
-  if (!response.ok) {
-    let detail = `Request failed (${response.status})`;
-    try {
-      const payload = await response.json();
-      detail = Array.isArray(payload.detail)
-        ? payload.detail.map((error) => error.msg).join("; ")
-        : payload.detail || detail;
-    } catch { /* The service may be temporarily unreachable. */ }
-    throw new Error(detail);
+
+  let inFlightId = null;
+
+  let fetchPromise = (async () => {
+    const response = await fetch(path, { ...options, headers });
+    if (!response.ok) {
+      let detail = `Request failed (${response.status})`;
+      try {
+        const payload = await response.json();
+        detail = Array.isArray(payload.detail)
+          ? payload.detail.map((error) => error.msg).join("; ")
+          : payload.detail || detail;
+      } catch { /* The service may be temporarily unreachable. */ }
+      throw new Error(detail);
+    }
+    const data = response.status === 204 ? null : await response.json();
+    if (isCacheable && data !== null) {
+      responseCache.set(path, data, reqEpoch);
+    }
+    if (method !== "GET") {
+      if (path.includes("/stock") || path.includes("/api/products")) {
+        responseCache.invalidate("/api/products");
+        responseCache.invalidate("/api/stats");
+      }
+    }
+    return data;
+  })();
+
+  if (isCacheable && !options.signal) {
+    inFlightId = responseCache.setInFlight(path, fetchPromise, reqEpoch);
+    // Replace the promise with the one returned by finally() to handle cleanup
+    // without creating an unhandled rejection, while preserving caller error handling:
+    fetchPromise = fetchPromise.finally(() => {
+      responseCache.clearInFlight(path, inFlightId);
+    });
   }
-  return response.status === 204 ? null : response.json();
+
+  return fetchPromise;
 }
 
 function toast(message) {
@@ -138,7 +256,6 @@ function renderProducts() {
     const copy = element("div");
     const name = element("button", "product-link", product.name);
     name.type = "button";
-    name.addEventListener("click", () => openDetail(product));
     copy.append(name, element("div", "product-meta", `${product.sku} · ${product.category}`));
     wrap.append(copy);
     productCell.append(wrap);
@@ -153,7 +270,6 @@ function renderProducts() {
     const stockButton = element("button", "stock-action", "Adjust stock");
     stockButton.type = "button";
     stockButton.setAttribute("aria-label", `Adjust stock for ${product.name}`);
-    stockButton.addEventListener("click", () => withAdmin(() => openStock(product)));
     stockButtonCell.append(stockButton);
     row.append(stockCell, element("td", "numeric", `${Number(product.rating).toFixed(1)} / 5`), stockButtonCell);
     fragment.append(row);
@@ -166,6 +282,16 @@ function renderProducts() {
   $("page-number").textContent = `Page ${state.page} of ${pages}`;
   $("previous-page").disabled = state.page <= 1;
   $("next-page").disabled = state.page >= pages;
+  window.__catalogRenderComplete = {
+    timestamp: performance.now(),
+    total,
+    page: state.page,
+    pages,
+    start,
+    firstProductId: state.products[start]?.id,
+    firstProductName: state.products[start]?.name,
+    loadedCount: state.products.length,
+  };
 }
 
 function option(value, label) {
@@ -291,11 +417,18 @@ function connectEvents() {
   events.addEventListener("ready", () => {
     $("live-status").classList.add("connected");
     $("live-label").textContent = "Live stock";
-    if (connectedOnce) { loadProducts(); loadStats(); }
+    if (connectedOnce) {
+      responseCache.invalidate("/api/products");
+      responseCache.invalidate("/api/stats");
+      loadProducts();
+      loadStats();
+    }
     connectedOnce = true;
   });
   const changed = (event) => {
     const payload = JSON.parse(event.data);
+    responseCache.invalidate("/api/products");
+    responseCache.invalidate("/api/stats");
     if (event.type === "stock") {
       $("event-note").textContent = `Stock updated for product #${payload.product_id} · ${payload.stock_before} → ${payload.stock} units`;
     } else $("event-note").textContent = "Catalog changed. Results refreshed.";
@@ -325,6 +458,24 @@ for (const id of ["min-price", "max-price"]) {
     state.searchTimer = setTimeout(() => loadProducts({ resetPage: true }), 300);
   });
 }
+$("products-body").addEventListener("click", (event) => {
+  const link = event.target.closest(".product-link");
+  const action = event.target.closest(".stock-action");
+  if (!link && !action) return;
+  const row = event.target.closest("tr[data-product-id]");
+  if (!row) return;
+  const productId = Number(row.dataset.productId);
+  const product = state.products.find((p) => p.id === productId);
+  if (!product) return;
+  if (link) {
+    event.preventDefault();
+    openDetail(product);
+  } else if (action) {
+    event.preventDefault();
+    withAdmin(() => openStock(product));
+  }
+});
+
 for (const id of ["clear-button", "empty-clear", "metric-all"]) $(id).addEventListener("click", clearFilters);
 for (const id of ["refresh-button", "retry-button"]) $(id).addEventListener("click", () => { loadProducts(); loadStats(); });
 $("metric-low").addEventListener("click", () => { $("stock").value = "low"; loadProducts({ resetPage: true }); });
@@ -422,7 +573,22 @@ $("auth-dialog").addEventListener("close", () => { $("admin-key").value = ""; if
 async function initialize() {
   await Promise.all([loadProducts(), loadStats(), loadReferences().catch((error) => toast(error.message))]);
 }
-initialize();
-let events = connectEvents();
-window.addEventListener("pagehide", () => events.close());
-window.addEventListener("pageshow", (event) => { if (event.persisted) { events = connectEvents(); loadProducts(); loadStats(); } });
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  initialize();
+  let events = connectEvents();
+  window.addEventListener("pagehide", () => events.close());
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      responseCache.invalidate("/api/products");
+      responseCache.invalidate("/api/stats");
+      events = connectEvents();
+      loadProducts();
+      loadStats();
+    }
+  });
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { ClientResponseCache, request, responseCache, state };
+}

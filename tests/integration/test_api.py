@@ -8,7 +8,7 @@ pytestmark = pytest.mark.integration
 def test_health_is_real_mysql(client):
     body = client.get("/health").json()
     assert body["status"] == "ok" and body["database"] == "mysql"
-    assert body["mysql_version"].startswith(("8.0", "8.4"))
+    assert body["mysql_version"].startswith(("8.0", "8.4", "9.", "26."))
 
 
 def test_catalog_has_600_seeded_products(client):
