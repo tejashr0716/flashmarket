@@ -1,70 +1,1183 @@
 {
-  "timestamp": "2026-10-22T16:28:14.087Z",
-  "runs_per_condition": 30,
+  "timestamp": "2026-10-22T17:00:33.108Z",
+  "methodology": "Interleaved fresh-context Playwright runs; finite API response bodies counted; SSE stream excluded.",
+  "runs": 30,
   "warmups": 3,
-  "viewport": {
-    "width": 1440,
-    "height": 900
+  "file_hashes": {
+    "baseline_sha256": "5f6276651f80284764d57f67d2861549f28a57049d59b86430e1e5926ff79fe0",
+    "optimized_sha256": "88ec8c56caaa184227f42d72fc8d82b6929b7a7aab9fe432c25f4eb5428773db"
   },
-  "baseline": {
-    "cold": {
-      "runs": 30,
-      "median_ms": 82.54,
-      "p95_ms": 112.98,
-      "p99_ms": 140.31,
-      "mean_ms": 88.46,
-      "stdev_ms": 13.81,
-      "min_ms": 79.04,
-      "max_ms": 140.31
+  "timings": {
+    "cold_load": {
+      "baseline": {
+        "runs": 30,
+        "median_ms": 81.88,
+        "p95_ms": 113.68,
+        "p99_ms": 115.97,
+        "mean_ms": 86.37,
+        "stdev_ms": 10.17,
+        "min_ms": 79.29,
+        "max_ms": 115.97
+      },
+      "optimized": {
+        "runs": 30,
+        "median_ms": 81.32,
+        "p95_ms": 98.35,
+        "p99_ms": 102.9,
+        "mean_ms": 83.72,
+        "stdev_ms": 5.83,
+        "min_ms": 78.19,
+        "max_ms": 102.9
+      }
     },
-    "warm": {
-      "runs": 30,
-      "median_ms": 99.89,
-      "p95_ms": 100.48,
-      "p99_ms": 116.39,
-      "mean_ms": 100.42,
-      "stdev_ms": 3.04,
-      "min_ms": 98.71,
-      "max_ms": 116.39
+    "sequence_transitions": {
+      "baseline": {
+        "runs": 30,
+        "median_ms": 228.59,
+        "p95_ms": 232.97,
+        "p99_ms": 247.25,
+        "mean_ms": 227.52,
+        "stdev_ms": 5.81,
+        "min_ms": 215.51,
+        "max_ms": 247.25
+      },
+      "optimized": {
+        "runs": 30,
+        "median_ms": 228.97,
+        "p95_ms": 231.49,
+        "p99_ms": 232.04,
+        "mean_ms": 228.3,
+        "stdev_ms": 2.63,
+        "min_ms": 218.51,
+        "max_ms": 232.04
+      }
     },
-    "avg_cold_bytes": 245583,
-    "avg_warm_bytes": 245541,
-    "avg_cold_reqs": 5,
-    "avg_warm_reqs": 3,
-    "errors": 0
+    "warm_revisit": {
+      "baseline": {
+        "runs": 30,
+        "median_ms": 99.87,
+        "p95_ms": 100.67,
+        "p99_ms": 100.9,
+        "mean_ms": 99.94,
+        "stdev_ms": 0.37,
+        "min_ms": 99.3,
+        "max_ms": 100.9
+      },
+      "optimized": {
+        "runs": 30,
+        "median_ms": 73.97,
+        "p95_ms": 74.69,
+        "p99_ms": 75.11,
+        "mean_ms": 73.96,
+        "stdev_ms": 0.47,
+        "min_ms": 72.59,
+        "max_ms": 75.11
+      }
+    }
   },
-  "optimized": {
-    "cold": {
-      "runs": 30,
-      "median_ms": 80.64,
-      "p95_ms": 101.85,
-      "p99_ms": 111.21,
-      "mean_ms": 83.77,
-      "stdev_ms": 8.27,
-      "min_ms": 75.69,
-      "max_ms": 111.21
+  "network_accounting": {
+    "warm_revisit_bytes": {
+      "baseline_avg": 82627,
+      "optimized_avg": 0,
+      "reduction_pct": 100
     },
-    "warm": {
-      "runs": 30,
-      "median_ms": 73.87,
-      "p95_ms": 74.64,
-      "p99_ms": 75.23,
-      "mean_ms": 73.92,
-      "stdev_ms": 0.47,
-      "min_ms": 73.1,
-      "max_ms": 75.23
-    },
-    "avg_cold_bytes": 245583,
-    "avg_warm_bytes": 162915,
-    "avg_cold_reqs": 5,
-    "avg_warm_reqs": 2,
-    "errors": 0
+    "warm_revisit_requests": {
+      "baseline_avg": 1,
+      "optimized_avg": 0
+    }
   },
-  "improvements": {
-    "cold_catalog_ready_pct": 2.3,
-    "warm_revisit_ready_pct": 26,
-    "warm_transferred_bytes_pct": 33.7
+  "headline_metrics": {
+    "warm_revisit_latency_pct": 25.9,
+    "warm_transferred_bytes_pct": 100
   },
-  "cache_invalidation_verified": true,
-  "note": "Measurements conducted using headless Chromium via Playwright under identical local conditions."
+  "errors": {
+    "baseline": 0,
+    "optimized": 0
+  },
+  "raw_samples": {
+    "baseline": [
+      {
+        "timings": {
+          "cold_ms": 80.64266599999974,
+          "seq_ms": 228.54300000000012,
+          "warm_revisit_ms": 100.50662499999999
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 79.52216700000008,
+          "seq_ms": 216.35691600000064,
+          "warm_revisit_ms": 100.47720800000025
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 94.80108399999972,
+          "seq_ms": 216.5363750000006,
+          "warm_revisit_ms": 100.05554099999972
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 86.7420830000001,
+          "seq_ms": 227.41725000000042,
+          "warm_revisit_ms": 99.66429200000039
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.11391700000058,
+          "seq_ms": 228.92004200000065,
+          "warm_revisit_ms": 99.97437499999978
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 95.17333299999882,
+          "seq_ms": 232.97437499999978,
+          "warm_revisit_ms": 99.80245800000012
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 79.28629100000035,
+          "seq_ms": 229.0397920000014,
+          "warm_revisit_ms": 99.80695799999921
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 104.47187499999927,
+          "seq_ms": 224.7129590000004,
+          "warm_revisit_ms": 99.34545799999978
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.83870799999931,
+          "seq_ms": 229.54574999999932,
+          "warm_revisit_ms": 99.86895800000093
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 82.42454100000032,
+          "seq_ms": 229.51391599999988,
+          "warm_revisit_ms": 99.76337500000045
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.12420800000109,
+          "seq_ms": 228.41820800000096,
+          "warm_revisit_ms": 100.10891699999956
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 83.45920800000022,
+          "seq_ms": 228.64562500000102,
+          "warm_revisit_ms": 99.9444999999996
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 115.97104199999922,
+          "seq_ms": 215.50808300000062,
+          "warm_revisit_ms": 100.89599999999882
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.4476250000007,
+          "seq_ms": 229.14250000000175,
+          "warm_revisit_ms": 99.87695800000074
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 82.84491700000217,
+          "seq_ms": 247.24891600000046,
+          "warm_revisit_ms": 99.84649999999965
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.85095800000272,
+          "seq_ms": 227.93883300000016,
+          "warm_revisit_ms": 99.93358300000182
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 86.12387500000114,
+          "seq_ms": 228.25400000000081,
+          "warm_revisit_ms": 100.39045800000167
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 82.8070000000007,
+          "seq_ms": 228.89170899999954,
+          "warm_revisit_ms": 99.83350000000064
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.78158299999996,
+          "seq_ms": 228.0448749999996,
+          "warm_revisit_ms": 100.67204200000197
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.32795799999803,
+          "seq_ms": 229.01045899999735,
+          "warm_revisit_ms": 99.85445899999831
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.32174999999916,
+          "seq_ms": 228.90716699999757,
+          "warm_revisit_ms": 99.29525000000285
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 104.3770829999994,
+          "seq_ms": 225.38508300000103,
+          "warm_revisit_ms": 99.47858399999677
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 82.52600000000166,
+          "seq_ms": 228.56575000000157,
+          "warm_revisit_ms": 100.00579099999959
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.97091699999874,
+          "seq_ms": 228.27987500000017,
+          "warm_revisit_ms": 99.89816699999938
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 82.08312499999738,
+          "seq_ms": 227.72083399999974,
+          "warm_revisit_ms": 100.1830000000009
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.78704099999959,
+          "seq_ms": 228.61983299999702,
+          "warm_revisit_ms": 99.8713749999988
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.89533299999675,
+          "seq_ms": 228.69737499999974,
+          "warm_revisit_ms": 99.9085410000007
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 113.67804199999955,
+          "seq_ms": 216.42691700000069,
+          "warm_revisit_ms": 99.5522920000003
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.79583300000013,
+          "seq_ms": 229.24341599999752,
+          "warm_revisit_ms": 99.76416699999754
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.97670799999833,
+          "seq_ms": 229.12162499999613,
+          "warm_revisit_ms": 99.50624999999854
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 1
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 82627
+        },
+        "errors": []
+      }
+    ],
+    "optimized": [
+      {
+        "timings": {
+          "cold_ms": 84.22637500000019,
+          "seq_ms": 229.00041699999974,
+          "warm_revisit_ms": 74.30125000000044
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.2965409999997,
+          "seq_ms": 231.2926669999997,
+          "warm_revisit_ms": 73.87291699999969
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 98.25066599999991,
+          "seq_ms": 231.48654100000022,
+          "warm_revisit_ms": 73.46258299999954
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.48870799999986,
+          "seq_ms": 229.03820799999994,
+          "warm_revisit_ms": 73.44241600000078
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 85.60845800000061,
+          "seq_ms": 227.80645800000093,
+          "warm_revisit_ms": 75.10662500000035
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.98837500000081,
+          "seq_ms": 228.9564160000009,
+          "warm_revisit_ms": 73.56308400000125
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.35874999999942,
+          "seq_ms": 228.9772499999999,
+          "warm_revisit_ms": 73.94337500000074
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 86.45691700000134,
+          "seq_ms": 224.58595800000148,
+          "warm_revisit_ms": 74.0578749999986
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.30904200000077,
+          "seq_ms": 228.3497920000009,
+          "warm_revisit_ms": 74.6075839999994
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.09449999999924,
+          "seq_ms": 229.00283300000046,
+          "warm_revisit_ms": 74.00458299999991
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 98.35141699999986,
+          "seq_ms": 231.18262499999946,
+          "warm_revisit_ms": 72.58591699999852
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 79.84879199999887,
+          "seq_ms": 229.28012499999932,
+          "warm_revisit_ms": 74.13258300000052
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 102.89529199999924,
+          "seq_ms": 226.09470799999872,
+          "warm_revisit_ms": 73.54920800000036
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.33320800000001,
+          "seq_ms": 229.39004099999875,
+          "warm_revisit_ms": 73.82150000000183
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 85.27195799999754,
+          "seq_ms": 224.7110410000023,
+          "warm_revisit_ms": 73.78462500000023
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.9255000000012,
+          "seq_ms": 229.16345799999908,
+          "warm_revisit_ms": 73.58466699999917
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.54708299999766,
+          "seq_ms": 229.14050000000134,
+          "warm_revisit_ms": 74.06562500000291
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.74587500000052,
+          "seq_ms": 228.945291,
+          "warm_revisit_ms": 73.59212499999921
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.8494580000006,
+          "seq_ms": 228.62787500000195,
+          "warm_revisit_ms": 73.65399999999863
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 83.74345800000083,
+          "seq_ms": 229.07279100000233,
+          "warm_revisit_ms": 74.00262499999735
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 82.23345799999879,
+          "seq_ms": 228.3827919999967,
+          "warm_revisit_ms": 73.93591600000218
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.31870899999922,
+          "seq_ms": 229.132999999998,
+          "warm_revisit_ms": 74.25879200000054
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 80.89916699999958,
+          "seq_ms": 229.50224999999773,
+          "warm_revisit_ms": 73.77779200000077
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.55204099999901,
+          "seq_ms": 232.04125000000204,
+          "warm_revisit_ms": 73.99549999999726
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.15799999999945,
+          "seq_ms": 228.24554100000023,
+          "warm_revisit_ms": 74.53116600000067
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 82.124791000002,
+          "seq_ms": 228.36612499999683,
+          "warm_revisit_ms": 74.56312500000058
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.31550000000061,
+          "seq_ms": 228.2154589999991,
+          "warm_revisit_ms": 74.04120899999907
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 78.1863749999975,
+          "seq_ms": 218.50966700000208,
+          "warm_revisit_ms": 73.78691700000127
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 81.0145420000008,
+          "seq_ms": 228.8412500000013,
+          "warm_revisit_ms": 74.69183299999713
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      },
+      {
+        "timings": {
+          "cold_ms": 86.24608299999818,
+          "seq_ms": 223.62308300000586,
+          "warm_revisit_ms": 74.23079200000211
+        },
+        "requests": {
+          "cold": 4,
+          "sequence": 2,
+          "warm_revisit": 0
+        },
+        "bytes": {
+          "cold": 245584,
+          "sequence": 162916,
+          "warm_revisit": 0
+        },
+        "errors": []
+      }
+    ]
+  }
 }

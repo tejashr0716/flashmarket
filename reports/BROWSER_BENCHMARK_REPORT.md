@@ -1,33 +1,36 @@
-# FlashMarket Browser Performance Benchmark Report
+# FlashMarket Browser Performance Benchmark Report (Audited)
 
-- **Generated**: 2026-10-22T16:28:14.087Z
-- **Runs per condition**: 30 measured iterations (+ 3 warmups)
-- **Viewport**: 1440 x 900 (Light theme)
-- **Page Readiness Metric**: Navigation / filter action until `#catalog[aria-busy="false"]` with 20 items rendered in `#products-body`.
+- **Generated**: 2026-10-22T17:00:33.108Z
+- **Methodology**: Interleaved execution (30 measured pairs, 3 warmups), fresh browser contexts (1440x900).
+- **Baseline SHA-256**: `5f6276651f80284764d57f67d2861549f28a57049d59b86430e1e5926ff79fe0`
+- **Optimized SHA-256**: `88ec8c56caaa184227f42d72fc8d82b6929b7a7aab9fe432c25f4eb5428773db`
+- **Workload Phases**:
+  1. `Cold Load`: Initial visit to `/` (20 items rendered, 600 total in catalog).
+  2. `Sequence Transitions`: Navigation through Electronics and Home categories.
+  3. `Warm Revisit`: Returning to previously viewed category (Electronics).
 
-## Benchmark Results
+## Verified Performance Comparison
 
-| Metric | Baseline (`app.baseline.js`) | Optimized (`app.js`) | Improvement (Δ %) |
+| Metric | Baseline (`app.baseline.js`) | Optimized (`app.js`) | vs Baseline (% Δ) |
 |---|---|---|---|
-| **Cold Catalog Ready (Median)** | 82.54 ms | **80.64 ms** | **+2.3%** |
-| **Cold Catalog Ready (p95)** | 112.98 ms | **101.85 ms** | — |
-| **Warm Category Revisit (Median)** | 99.89 ms | **73.87 ms** | **+26%** (faster) |
-| **Warm Category Revisit (p95)** | 100.48 ms | **74.64 ms** | — |
-| **Warm Transferred API Bytes** | 239.8 KB | **159.1 KB** | **+33.7%** (saved) |
-| **Warm API Requests** | 3 reqs | **2 reqs** | — |
-| **JavaScript / Console Errors** | 0 | **0** | Zero errors |
+| **Cold Catalog Ready (Median)** | 81.88 ms (p95: 113.68 ms) | **81.32 ms** (p95: 98.35 ms) | 0.7% |
+| **Sequence Transitions (Median)** | 228.59 ms | **228.97 ms** | — |
+| **Warm Category Revisit (Median)** | 99.87 ms (p95: 100.67 ms) | **73.97 ms** (p95: 74.69 ms) | **+25.9%** (faster) |
+| **Warm Revisit Transferred API Bytes** | 80.7 KB | **0.0 KB** | **+100%** (saved) |
+| **Warm Revisit API Requests** | 1 reqs | **0 reqs** | — |
+| **JavaScript / Console Errors** | 0 | **0** | **Zero errors** |
 
-## Engineering Optimizations
+## Audit Resolutions
 
-1. **Client-Side Safe Response Caching with Invalidation**:
-   - Implemented an in-memory `ClientResponseCache` with configurable TTL and request deduplication.
-   - Re-filtering or navigating back to previously viewed categories serves data instantly from memory without redundant network roundtrips, reducing transferred bytes during warm navigation by **33.7%**.
-   - Verified that admin stock adjustments and SSE events strictly invalidate the cache, preventing stale inventory views.
+1. **Stale Cache Repopulation & Epochs**:
+   - Integrated `ClientResponseCache` with generation/epoch numbers.
+   - If an invalidation occurs while an in-flight request is resolving, the returned payload's epoch does not match current epoch, preventing stale data from repopulating the cache.
+   - Newer requests arriving after an invalidation are blocked from joining obsolete in-flight promises.
 
-2. **DOM Event Delegation & Reduced Closure Allocations**:
-   - Replaced per-row `addEventListener` registrations on 20 product links and stock action buttons with a centralized delegated listener on `#products-body`.
-   - Eliminates 40+ listener bindings and closure allocations on every table render or page change.
+2. **Unhandled Promise Rejections**:
+   - The promise returned by `.finally()` is assigned and returned directly, eliminating unhandled sibling promise rejections on network failures while preserving rejection handling for callers.
 
-3. **Distinction from Historical Claims**:
-   - Historical internship bullet claims ("40% page load reduction") were unverified due to lack of historical baseline code.
-   - This benchmark establishes a reproducible local baseline and measures a **26% speedup** on warm view revisits and **33.7% reduction** in transferred API payload bytes on modern browser workloads.
+3. **Accurate Accounting**:
+   - Each HTTP request is assigned to its execution phase at request **start** (`page.on('request')`).
+   - Long-lived Server-Sent Events stream (`/api/events`) is excluded from finite body byte totals.
+   - Transition sequence is reported separately from the warm revisit.

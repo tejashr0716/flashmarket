@@ -18,25 +18,57 @@ class ClientResponseCache {
     this.defaultTtl = defaultTtlMs;
     this.cache = new Map();
     this.inFlight = new Map();
+    this.epoch = 0;
+    this.nextId = 0;
   }
 
   get(key) {
     const entry = this.cache.get(key);
     if (!entry) return null;
-    if (Date.now() > entry.expiresAt) {
+    if (Date.now() > entry.expiresAt || entry.epoch !== this.epoch) {
       this.cache.delete(key);
       return null;
     }
     return entry.data;
   }
 
-  set(key, data, ttlMs = this.defaultTtl) {
-    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+  set(key, data, requestEpoch, ttlMs = this.defaultTtl) {
+    // Stale repopulation guard: drop if epoch changed while request was in-flight
+    if (requestEpoch !== this.epoch) {
+      return;
+    }
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs, epoch: requestEpoch });
+  }
+
+  getInFlight(key) {
+    const flight = this.inFlight.get(key);
+    if (!flight) return null;
+    // Obsolete in-flight guard: do not join work started before latest invalidation
+    if (flight.epoch !== this.epoch) {
+      return null;
+    }
+    return flight.promise;
+  }
+
+  setInFlight(key, promise, epoch) {
+    const id = ++this.nextId;
+    this.inFlight.set(key, { promise, epoch, id });
+    return id;
+  }
+
+  clearInFlight(key, id) {
+    const current = this.inFlight.get(key);
+    // Order guard: only delete if current matches this exact request ID
+    if (current && current.id === id) {
+      this.inFlight.delete(key);
+    }
   }
 
   invalidate(pattern) {
+    this.epoch++;
     if (!pattern) {
       this.cache.clear();
+      this.inFlight.clear();
       return;
     }
     for (const key of this.cache.keys()) {
@@ -44,10 +76,17 @@ class ClientResponseCache {
         this.cache.delete(key);
       }
     }
+    for (const key of this.inFlight.keys()) {
+      if (key.includes(pattern)) {
+        this.inFlight.delete(key);
+      }
+    }
   }
 
   clear() {
+    this.epoch++;
     this.cache.clear();
+    this.inFlight.clear();
   }
 }
 
@@ -63,20 +102,23 @@ function element(tag, className, text) {
 async function request(path, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   const isCacheable = method === "GET" && !options.headers?.["X-Admin-Key"];
+  const reqEpoch = responseCache.epoch;
 
   if (isCacheable) {
     const cached = responseCache.get(path);
     if (cached) return JSON.parse(JSON.stringify(cached));
-    if (responseCache.inFlight.has(path)) {
-      const flightData = await responseCache.inFlight.get(path);
-      return JSON.parse(JSON.stringify(flightData));
+    const flight = responseCache.getInFlight(path);
+    if (flight && !options.signal) {
+      return flight.then((data) => JSON.parse(JSON.stringify(data)));
     }
   }
 
   const headers = { ...options.headers };
   if (options.body) headers["Content-Type"] = "application/json";
 
-  const fetchPromise = (async () => {
+  let inFlightId = null;
+
+  let fetchPromise = (async () => {
     const response = await fetch(path, { ...options, headers });
     if (!response.ok) {
       let detail = `Request failed (${response.status})`;
@@ -90,10 +132,9 @@ async function request(path, options = {}) {
     }
     const data = response.status === 204 ? null : await response.json();
     if (isCacheable && data !== null) {
-      responseCache.set(path, data);
+      responseCache.set(path, data, reqEpoch);
     }
     if (method !== "GET") {
-      // Invalidate relevant cached data on mutations:
       if (path.includes("/stock") || path.includes("/api/products")) {
         responseCache.invalidate("/api/products");
         responseCache.invalidate("/api/stats");
@@ -103,8 +144,12 @@ async function request(path, options = {}) {
   })();
 
   if (isCacheable && !options.signal) {
-    responseCache.inFlight.set(path, fetchPromise);
-    fetchPromise.finally(() => responseCache.inFlight.delete(path));
+    inFlightId = responseCache.setInFlight(path, fetchPromise, reqEpoch);
+    // Replace the promise with the one returned by finally() to handle cleanup
+    // without creating an unhandled rejection, while preserving caller error handling:
+    fetchPromise = fetchPromise.finally(() => {
+      responseCache.clearInFlight(path, inFlightId);
+    });
   }
 
   return fetchPromise;
@@ -237,6 +282,16 @@ function renderProducts() {
   $("page-number").textContent = `Page ${state.page} of ${pages}`;
   $("previous-page").disabled = state.page <= 1;
   $("next-page").disabled = state.page >= pages;
+  window.__catalogRenderComplete = {
+    timestamp: performance.now(),
+    total,
+    page: state.page,
+    pages,
+    start,
+    firstProductId: state.products[start]?.id,
+    firstProductName: state.products[start]?.name,
+    loadedCount: state.products.length,
+  };
 }
 
 function option(value, label) {
@@ -362,7 +417,12 @@ function connectEvents() {
   events.addEventListener("ready", () => {
     $("live-status").classList.add("connected");
     $("live-label").textContent = "Live stock";
-    if (connectedOnce) { loadProducts(); loadStats(); }
+    if (connectedOnce) {
+      responseCache.invalidate("/api/products");
+      responseCache.invalidate("/api/stats");
+      loadProducts();
+      loadStats();
+    }
     connectedOnce = true;
   });
   const changed = (event) => {
@@ -516,4 +576,12 @@ async function initialize() {
 initialize();
 let events = connectEvents();
 window.addEventListener("pagehide", () => events.close());
-window.addEventListener("pageshow", (event) => { if (event.persisted) { events = connectEvents(); loadProducts(); loadStats(); } });
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    responseCache.invalidate("/api/products");
+    responseCache.invalidate("/api/stats");
+    events = connectEvents();
+    loadProducts();
+    loadStats();
+  }
+});
