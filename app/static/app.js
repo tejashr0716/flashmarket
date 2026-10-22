@@ -13,6 +13,46 @@ const state = {
   abort: null, generation: 0, searchTimer: null, eventTimer: null, toastTimer: null,
 };
 
+class ClientResponseCache {
+  constructor(defaultTtlMs = 60000) {
+    this.defaultTtl = defaultTtlMs;
+    this.cache = new Map();
+    this.inFlight = new Map();
+  }
+
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  set(key, data, ttlMs = this.defaultTtl) {
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+  }
+
+  invalidate(pattern) {
+    if (!pattern) {
+      this.cache.clear();
+      return;
+    }
+    for (const key of this.cache.keys()) {
+      if (key.includes(pattern)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+}
+
+const responseCache = new ClientResponseCache();
+
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -21,20 +61,53 @@ function element(tag, className, text) {
 }
 
 async function request(path, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const isCacheable = method === "GET" && !options.headers?.["X-Admin-Key"];
+
+  if (isCacheable) {
+    const cached = responseCache.get(path);
+    if (cached) return JSON.parse(JSON.stringify(cached));
+    if (responseCache.inFlight.has(path)) {
+      const flightData = await responseCache.inFlight.get(path);
+      return JSON.parse(JSON.stringify(flightData));
+    }
+  }
+
   const headers = { ...options.headers };
   if (options.body) headers["Content-Type"] = "application/json";
-  const response = await fetch(path, { ...options, headers });
-  if (!response.ok) {
-    let detail = `Request failed (${response.status})`;
-    try {
-      const payload = await response.json();
-      detail = Array.isArray(payload.detail)
-        ? payload.detail.map((error) => error.msg).join("; ")
-        : payload.detail || detail;
-    } catch { /* The service may be temporarily unreachable. */ }
-    throw new Error(detail);
+
+  const fetchPromise = (async () => {
+    const response = await fetch(path, { ...options, headers });
+    if (!response.ok) {
+      let detail = `Request failed (${response.status})`;
+      try {
+        const payload = await response.json();
+        detail = Array.isArray(payload.detail)
+          ? payload.detail.map((error) => error.msg).join("; ")
+          : payload.detail || detail;
+      } catch { /* The service may be temporarily unreachable. */ }
+      throw new Error(detail);
+    }
+    const data = response.status === 204 ? null : await response.json();
+    if (isCacheable && data !== null) {
+      responseCache.set(path, data);
+    }
+    if (method !== "GET") {
+      // Invalidate relevant cached data on mutations:
+      if (path.includes("/stock") || path.includes("/api/products")) {
+        responseCache.invalidate("/api/products");
+        responseCache.invalidate("/api/stats");
+      }
+    }
+    return data;
+  })();
+
+  if (isCacheable && !options.signal) {
+    responseCache.inFlight.set(path, fetchPromise);
+    fetchPromise.finally(() => responseCache.inFlight.delete(path));
   }
-  return response.status === 204 ? null : response.json();
+
+  return fetchPromise;
 }
 
 function toast(message) {
@@ -138,7 +211,6 @@ function renderProducts() {
     const copy = element("div");
     const name = element("button", "product-link", product.name);
     name.type = "button";
-    name.addEventListener("click", () => openDetail(product));
     copy.append(name, element("div", "product-meta", `${product.sku} · ${product.category}`));
     wrap.append(copy);
     productCell.append(wrap);
@@ -153,7 +225,6 @@ function renderProducts() {
     const stockButton = element("button", "stock-action", "Adjust stock");
     stockButton.type = "button";
     stockButton.setAttribute("aria-label", `Adjust stock for ${product.name}`);
-    stockButton.addEventListener("click", () => withAdmin(() => openStock(product)));
     stockButtonCell.append(stockButton);
     row.append(stockCell, element("td", "numeric", `${Number(product.rating).toFixed(1)} / 5`), stockButtonCell);
     fragment.append(row);
@@ -296,6 +367,8 @@ function connectEvents() {
   });
   const changed = (event) => {
     const payload = JSON.parse(event.data);
+    responseCache.invalidate("/api/products");
+    responseCache.invalidate("/api/stats");
     if (event.type === "stock") {
       $("event-note").textContent = `Stock updated for product #${payload.product_id} · ${payload.stock_before} → ${payload.stock} units`;
     } else $("event-note").textContent = "Catalog changed. Results refreshed.";
@@ -325,6 +398,24 @@ for (const id of ["min-price", "max-price"]) {
     state.searchTimer = setTimeout(() => loadProducts({ resetPage: true }), 300);
   });
 }
+$("products-body").addEventListener("click", (event) => {
+  const link = event.target.closest(".product-link");
+  const action = event.target.closest(".stock-action");
+  if (!link && !action) return;
+  const row = event.target.closest("tr[data-product-id]");
+  if (!row) return;
+  const productId = Number(row.dataset.productId);
+  const product = state.products.find((p) => p.id === productId);
+  if (!product) return;
+  if (link) {
+    event.preventDefault();
+    openDetail(product);
+  } else if (action) {
+    event.preventDefault();
+    withAdmin(() => openStock(product));
+  }
+});
+
 for (const id of ["clear-button", "empty-clear", "metric-all"]) $(id).addEventListener("click", clearFilters);
 for (const id of ["refresh-button", "retry-button"]) $(id).addEventListener("click", () => { loadProducts(); loadStats(); });
 $("metric-low").addEventListener("click", () => { $("stock").value = "low"; loadProducts({ resetPage: true }); });

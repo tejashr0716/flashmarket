@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-10-22T16:28:14.087Z",
+  "runs_per_condition": 30,
+  "warmups": 3,
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "baseline": {
+    "cold": {
+      "runs": 30,
+      "median_ms": 82.54,
+      "p95_ms": 112.98,
+      "p99_ms": 140.31,
+      "mean_ms": 88.46,
+      "stdev_ms": 13.81,
+      "min_ms": 79.04,
+      "max_ms": 140.31
+    },
+    "warm": {
+      "runs": 30,
+      "median_ms": 99.89,
+      "p95_ms": 100.48,
+      "p99_ms": 116.39,
+      "mean_ms": 100.42,
+      "stdev_ms": 3.04,
+      "min_ms": 98.71,
+      "max_ms": 116.39
+    },
+    "avg_cold_bytes": 245583,
+    "avg_warm_bytes": 245541,
+    "avg_cold_reqs": 5,
+    "avg_warm_reqs": 3,
+    "errors": 0
+  },
+  "optimized": {
+    "cold": {
+      "runs": 30,
+      "median_ms": 80.64,
+      "p95_ms": 101.85,
+      "p99_ms": 111.21,
+      "mean_ms": 83.77,
+      "stdev_ms": 8.27,
+      "min_ms": 75.69,
+      "max_ms": 111.21
+    },
+    "warm": {
+      "runs": 30,
+      "median_ms": 73.87,
+      "p95_ms": 74.64,
+      "p99_ms": 75.23,
+      "mean_ms": 73.92,
+      "stdev_ms": 0.47,
+      "min_ms": 73.1,
+      "max_ms": 75.23
+    },
+    "avg_cold_bytes": 245583,
+    "avg_warm_bytes": 162915,
+    "avg_cold_reqs": 5,
+    "avg_warm_reqs": 2,
+    "errors": 0
+  },
+  "improvements": {
+    "cold_catalog_ready_pct": 2.3,
+    "warm_revisit_ready_pct": 26,
+    "warm_transferred_bytes_pct": 33.7
+  },
+  "cache_invalidation_verified": true,
+  "note": "Measurements conducted using headless Chromium via Playwright under identical local conditions."
+}
