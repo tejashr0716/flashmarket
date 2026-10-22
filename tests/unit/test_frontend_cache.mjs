@@ -1,151 +1,139 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import vm from "node:vm";
 
-// Implement the identical ClientResponseCache class to test epoch & in-flight logic
-class ClientResponseCache {
-  constructor(defaultTtlMs = 60000) {
-    this.defaultTtl = defaultTtlMs;
-    this.cache = new Map();
-    this.inFlight = new Map();
-    this.epoch = 0;
-    this.nextId = 0;
+// Load actual production source from app/static/app.js directly (no duplicated classes):
+const appJsPath = path.resolve("app/static/app.js");
+const appSource = fs.readFileSync(appJsPath, "utf8").split("function toast(")[0];
+
+function createAppContext(customFetch) {
+  let fetchFn = customFetch;
+  if (!fetchFn) {
+    fetchFn = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ stock: 10 }),
+    });
   }
 
-  get(key) {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    if (Date.now() > entry.expiresAt || entry.epoch !== this.epoch) {
-      this.cache.delete(key);
-      return null;
-    }
-    return entry.data;
-  }
+  const ctx = vm.createContext({
+    Intl,
+    Map,
+    Date,
+    JSON,
+    setTimeout,
+    clearTimeout,
+    fetch: (...args) => fetchFn(...args),
+    console,
+  });
 
-  set(key, data, requestEpoch, ttlMs = this.defaultTtl) {
-    if (requestEpoch !== this.epoch) {
-      return false; // Stale repopulation prevented
-    }
-    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs, epoch: requestEpoch });
-    return true;
-  }
-
-  getInFlight(key) {
-    const flight = this.inFlight.get(key);
-    if (!flight) return null;
-    if (flight.epoch !== this.epoch) {
-      return null; // Obsolete in-flight request rejected
-    }
-    return flight.promise;
-  }
-
-  setInFlight(key, promise, epoch) {
-    const id = ++this.nextId;
-    this.inFlight.set(key, { promise, epoch, id });
-    return id;
-  }
-
-  clearInFlight(key, id) {
-    const current = this.inFlight.get(key);
-    if (current && current.id === id) {
-      this.inFlight.delete(key);
-      return true;
-    }
-    return false;
-  }
-
-  invalidate(pattern) {
-    this.epoch++;
-    if (!pattern) {
-      this.cache.clear();
-      this.inFlight.clear();
-      return;
-    }
-    for (const key of this.cache.keys()) {
-      if (key.includes(pattern)) {
-        this.cache.delete(key);
-      }
-    }
-    for (const key of this.inFlight.keys()) {
-      if (key.includes(pattern)) {
-        this.inFlight.delete(key);
-      }
-    }
-  }
+  vm.runInContext(
+    appSource + "\n; globalThis.__api = { ClientResponseCache, responseCache, request, state };",
+    ctx
+  );
+  return { ctx, api: ctx.__api, setFetch: (fn) => { fetchFn = fn; } };
 }
 
-test("stale cache repopulation is prevented when invalidation occurs during in-flight fetch", () => {
-  const cache = new ClientResponseCache();
-  const startEpoch = cache.epoch; // 0
+test("stale cache repopulation is prevented when invalidation occurs during in-flight fetch", async () => {
+  let releaseFirstFetch;
+  let fetchCount = 0;
 
-  // An invalidation happens while request is in-flight:
-  cache.invalidate("/api/products");
-  assert.equal(cache.epoch, 1);
+  const { api } = createAppContext(async () => {
+    fetchCount++;
+    if (fetchCount === 1) {
+      return new Promise((resolve) => {
+        releaseFirstFetch = resolve;
+      });
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ stock: 42, version: 2 }),
+    };
+  });
 
-  // Older in-flight fetch finishes and attempts to set:
-  const saved = cache.set("/api/products?cat=1", { items: ["stale"] }, startEpoch);
-  assert.equal(saved, false);
-  assert.equal(cache.get("/api/products?cat=1"), null);
+  // Start in-flight request:
+  const firstReq = api.request("/api/products?cat=1");
+
+  // Invalidation occurs while request is in-flight:
+  api.responseCache.invalidate("/api/products");
+
+  // In-flight fetch resolves with older/stale data:
+  releaseFirstFetch({
+    ok: true,
+    status: 200,
+    json: async () => ({ stock: 5, version: 1 }),
+  });
+  await firstReq;
+
+  // Stale data must NOT have repopulated the cache:
+  assert.equal(api.responseCache.get("/api/products?cat=1"), null);
+
+  // Subsequent request fetches fresh data:
+  const fresh = await api.request("/api/products?cat=1");
+  assert.equal(fresh.stock, 42);
+  assert.equal(fetchCount, 2);
 });
 
 test("new requests arriving after invalidation do not join obsolete in-flight work", () => {
-  const cache = new ClientResponseCache();
+  const { api } = createAppContext();
+  const c = api.responseCache;
   const slowPromise = new Promise(() => {}); // never resolves
-  cache.setInFlight("/api/products?cat=1", slowPromise, cache.epoch);
+  c.setInFlight("/api/products?cat=1", slowPromise, c.epoch);
 
   // Invalidation occurs:
-  cache.invalidate("/api/products");
+  c.invalidate("/api/products");
 
   // Newer request arrives after invalidation:
-  const joinedFlight = cache.getInFlight("/api/products?cat=1");
+  const joinedFlight = c.getInFlight("/api/products?cat=1");
   assert.equal(joinedFlight, null, "Should not join obsolete in-flight promise from older epoch");
 });
 
 test("older request cleanup does not delete a newer in-flight entry", () => {
-  const cache = new ClientResponseCache();
+  const { api } = createAppContext();
+  const c = api.responseCache;
   const p1 = Promise.resolve("old");
-  const id1 = cache.setInFlight("/api/products", p1, cache.epoch);
+  const id1 = c.setInFlight("/api/products", p1, c.epoch);
 
   // A newer request replaces the in-flight slot:
   const p2 = Promise.resolve("new");
-  const id2 = cache.setInFlight("/api/products", p2, cache.epoch);
+  const id2 = c.setInFlight("/api/products", p2, c.epoch);
   assert.notEqual(id1, id2);
 
   // Older request cleans up:
-  const deletedOld = cache.clearInFlight("/api/products", id1);
-  assert.equal(deletedOld, false, "Older request must not delete newer in-flight slot");
-  assert.ok(cache.inFlight.has("/api/products"));
-  assert.equal(cache.inFlight.get("/api/products").id, id2);
+  c.clearInFlight("/api/products", id1);
+  assert.ok(c.inFlight.has("/api/products"));
+  assert.equal(c.inFlight.get("/api/products").id, id2);
 
   // Newer request cleans up:
-  const deletedNew = cache.clearInFlight("/api/products", id2);
-  assert.equal(deletedNew, true);
-  assert.equal(cache.inFlight.has("/api/products"), false);
+  c.clearInFlight("/api/products", id2);
+  assert.equal(c.inFlight.has("/api/products"), false);
 });
 
-test("failed requests handled in finally do not trigger unhandledRejection when replaced", async () => {
-  let unhandled = false;
-  const onUnhandled = () => { unhandled = true; };
+test("concurrent callers receive handled failures without unhandled rejections", async () => {
+  const unhandled = [];
+  const onUnhandled = (e) => unhandled.push(e?.message || String(e));
   process.on("unhandledRejection", onUnhandled);
 
-  const cache = new ClientResponseCache();
-  const path = "/api/test-failure";
-  const reqEpoch = cache.epoch;
+  const { api } = createAppContext(async () => ({
+    ok: false,
+    status: 503,
+    json: async () => ({ detail: "Simulated backend outage" }),
+  }));
 
-  let fetchPromise = Promise.reject(new Error("Simulated 500 Network Error"));
-  const inFlightId = cache.setInFlight(path, fetchPromise, reqEpoch);
+  // Two concurrent deduplicated callers:
+  const outcomes = await Promise.allSettled([
+    api.request("/api/products?failure_test=1"),
+    api.request("/api/products?failure_test=1"),
+  ]);
 
-  // Replace the ignored promise returned by fetchPromise.finally():
-  fetchPromise = fetchPromise.finally(() => {
-    cache.clearInFlight(path, inFlightId);
-  });
+  assert.equal(outcomes.length, 2);
+  assert.ok(outcomes.every((x) => x.status === "rejected"));
+  assert.ok(outcomes[0].reason.message.includes("Simulated backend outage"));
 
-  // Caller catches the replaced promise:
-  await assert.rejects(fetchPromise, /Simulated 500 Network Error/);
-
-  // In-flight slot is cleared:
-  assert.equal(cache.inFlight.has(path), false);
-
-  await new Promise((r) => setTimeout(r, 50));
+  await new Promise((r) => setTimeout(r, 60));
   process.off("unhandledRejection", onUnhandled);
-  assert.equal(unhandled, false, "No unhandled rejection should occur");
+  assert.equal(unhandled.length, 0, `No unhandled rejections should occur: ${JSON.stringify(unhandled)}`);
 });

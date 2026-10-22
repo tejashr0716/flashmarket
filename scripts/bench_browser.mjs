@@ -1,18 +1,23 @@
 /**
- * FlashMarket Browser Performance Benchmark (Interleaved Multi-Phase Audit)
+ * FlashMarket Browser Performance Benchmark (Counterbalanced Multi-Phase Audit)
  *
  * Methodology:
  * 1. Genuine Baseline Preservation:
  *    - Hashes (SHA-256) of app.baseline.js and app.js recorded.
- *    - Interleaved execution (Run N Baseline -> Run N Optimized) to neutralize server/OS warmup bias.
- * 2. Reliable Application Readiness Checks:
- *    - Asserts window.__catalogRenderComplete, #result-summary text, and product names for each view.
- * 3. Request & Byte Accounting:
+ *    - Counterbalanced execution: alternating baseline-first and optimized-first pairs
+ *      to eliminate server/OS warmup and thermal bias.
+ * 2. Deterministic Application Readiness & Content Validation:
+ *    - Validates category dropdown value, result-summary text, product metadata category,
+ *      aria-busy state, and exact 20-row count after each navigation.
+ *    - Identical readiness criteria applied to both baseline and optimized conditions.
+ * 3. Exact Request & API Response-Body Byte Accounting:
  *    - Request phase assigned on request START via page.on('request').
- *    - Long-lived SSE streams (/api/events) excluded from finite byte totals.
- *    - Reports sequence transitions (Electronics -> Home) separately from final warm revisit (Home -> Electronics).
- * 4. Error Capture:
- *    - Listens to pageerror and console.error, fails on unexpected errors.
+ *    - Long-lived SSE stream (/api/events) excluded from finite body totals.
+ *    - Explicitly awaits all pending finite response-body reads (replaces fixed sleeps).
+ *    - Reports cold load, uncached sequence transitions, and final cached revisit separately.
+ * 4. Error Capture & Fail-Fast Safety:
+ *    - Captures pageerror and console.error events; fails benchmark run on unexpected errors.
+ *    - Dynamic error reporting from empirical outcomes (never hardcoded 'Zero errors').
  * 5. Statistical Rigor:
  *    - 30 measured runs + 3 documented warmups per condition.
  *    - Saves raw JSON timings, request counts, byte counts, and error logs.
@@ -55,7 +60,7 @@ function calculateStats(samples) {
   };
 }
 
-async function executeIteration(browser, scriptContent, isBaseline) {
+async function executeIteration(browser, scriptContent, conditionName) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     colorScheme: "light",
@@ -66,13 +71,11 @@ async function executeIteration(browser, scriptContent, isBaseline) {
   page.on("pageerror", (err) => errors.push({ type: "pageerror", text: err.message }));
   page.on("console", (msg) => {
     if (msg.type() === "error") {
-      const text = msg.text();
-      // Filter out known 422 validation tests if any, else record
-      errors.push({ type: "console.error", text });
+      errors.push({ type: "console.error", text: msg.text() });
     }
   });
 
-  // Intercept and route /static/app.js to test target:
+  // Intercept and route /static/app.js to test target script:
   await page.route("**/static/app.js", (route) => {
     route.fulfill({
       status: 200,
@@ -85,10 +88,11 @@ async function executeIteration(browser, scriptContent, isBaseline) {
   const requestPhases = new Map();
   const phaseReqCounts = { cold: 0, sequence: 0, warm_revisit: 0 };
   const phaseBodyBytes = { cold: 0, sequence: 0, warm_revisit: 0 };
+  const pendingBodyReads = [];
 
   page.on("request", (req) => {
     const url = req.url();
-    // Exclude long-lived streaming connection from finite payload totals:
+    // Exclude long-lived SSE streaming connection from finite payload totals:
     if (url.includes("/api/events")) return;
     if (url.includes("/api/")) {
       requestPhases.set(req, currentPhase);
@@ -96,14 +100,19 @@ async function executeIteration(browser, scriptContent, isBaseline) {
     }
   });
 
-  page.on("response", async (res) => {
+  page.on("response", (res) => {
     const req = res.request();
     const phase = requestPhases.get(req);
     if (!phase) return;
-    try {
-      const buf = await res.body();
-      phaseBodyBytes[phase] += buf.length;
-    } catch {}
+    const bodyPromise = (async () => {
+      try {
+        const buf = await res.body();
+        phaseBodyBytes[phase] += buf.length;
+      } catch {
+        // e.g. aborted navigation
+      }
+    })();
+    pendingBodyReads.push(bodyPromise);
   });
 
   // 1. Cold Load
@@ -114,11 +123,12 @@ async function executeIteration(browser, scriptContent, isBaseline) {
     const busy = document.querySelector("#catalog")?.getAttribute("aria-busy");
     const summary = document.querySelector("#result-summary")?.textContent || "";
     const rows = document.querySelectorAll("#products-body tr");
-    return busy === "false" && summary.includes("600 results") && rows.length === 20;
+    const catVal = document.querySelector("#category")?.value;
+    return busy === "false" && summary.includes("600 results") && rows.length === 20 && (!catVal || catVal === "");
   });
   const coldDuration = performance.now() - t0_cold;
 
-  // 2. Sequence Transition 1: Filter to Electronics (Category 1)
+  // 2. Sequence Transition 1: Filter to Electronics (Category ID 1)
   currentPhase = "sequence";
   const t0_seq = performance.now();
   await page.locator("#category-map-button").click();
@@ -126,16 +136,34 @@ async function executeIteration(browser, scriptContent, isBaseline) {
   await page.waitForFunction(() => {
     const busy = document.querySelector("#catalog")?.getAttribute("aria-busy");
     const summary = document.querySelector("#result-summary")?.textContent || "";
-    return busy === "false" && !summary.includes("600 results");
+    const catVal = document.querySelector("#category")?.value;
+    const firstRowMeta = document.querySelector("#products-body tr .product-meta")?.textContent || "";
+    const rowCount = document.querySelectorAll("#products-body tr").length;
+    return (
+      busy === "false" &&
+      catVal === "1" &&
+      summary.includes("204 results") &&
+      firstRowMeta.includes("Microphones") &&
+      rowCount === 20
+    );
   });
 
-  // Sequence Transition 2: Filter to Home (Category 2)
+  // Sequence Transition 2: Filter to Home (Category ID 14)
   await page.locator("#category-map-button").click();
   await page.locator(".category-choice.depth-1", { hasText: "Home" }).click();
   await page.waitForFunction(() => {
     const busy = document.querySelector("#catalog")?.getAttribute("aria-busy");
     const summary = document.querySelector("#result-summary")?.textContent || "";
-    return busy === "false" && !summary.includes("600 results");
+    const catVal = document.querySelector("#category")?.value;
+    const firstRowMeta = document.querySelector("#products-body tr .product-meta")?.textContent || "";
+    const rowCount = document.querySelectorAll("#products-body tr").length;
+    return (
+      busy === "false" &&
+      catVal === "14" &&
+      summary.includes("198 results") &&
+      firstRowMeta.includes("Fans") &&
+      rowCount === 20
+    );
   });
   const seqDuration = performance.now() - t0_seq;
 
@@ -147,13 +175,26 @@ async function executeIteration(browser, scriptContent, isBaseline) {
   await page.waitForFunction(() => {
     const busy = document.querySelector("#catalog")?.getAttribute("aria-busy");
     const summary = document.querySelector("#result-summary")?.textContent || "";
-    return busy === "false" && !summary.includes("600 results");
+    const catVal = document.querySelector("#category")?.value;
+    const firstRowMeta = document.querySelector("#products-body tr .product-meta")?.textContent || "";
+    const rowCount = document.querySelectorAll("#products-body tr").length;
+    return (
+      busy === "false" &&
+      catVal === "1" &&
+      summary.includes("204 results") &&
+      firstRowMeta.includes("Microphones") &&
+      rowCount === 20
+    );
   });
   const warmDuration = performance.now() - t0_warm;
 
-  // Wait for any remaining microtask/response body resolution:
-  await page.waitForTimeout(50);
+  // Explicitly drain and await all pending response body reads:
+  await Promise.all(pendingBodyReads);
   await context.close();
+
+  if (errors.length > 0) {
+    throw new Error(`Unexpected browser error in ${conditionName}: ${JSON.stringify(errors)}`);
+  }
 
   return {
     timings: {
@@ -244,7 +285,7 @@ async function main() {
   const baselineSha = crypto.createHash("sha256").update(baselineContent).digest("hex");
   const optSha = crypto.createHash("sha256").update(optContent).digest("hex");
 
-  console.log(`FlashMarket Interleaved Benchmark: ${MEASURED_RUNS} measured runs (+ ${WARMUP_RUNS} warmups)`);
+  console.log(`FlashMarket Counterbalanced Benchmark: ${MEASURED_RUNS} measured runs (+ ${WARMUP_RUNS} warmups)`);
   console.log(`Baseline hash:  ${baselineSha}`);
   console.log(`Optimized hash: ${optSha}\n`);
 
@@ -255,24 +296,36 @@ async function main() {
 
   const baselineRaw = [];
   const optRaw = [];
+  const executionOrder = [];
 
   try {
     for (let run = 1; run <= TOTAL_RUNS; run++) {
       const isWarmup = run <= WARMUP_RUNS;
       const label = isWarmup ? `Warmup ${run}` : `Run ${run - WARMUP_RUNS}/${MEASURED_RUNS}`;
 
-      // 1. Run Baseline
-      const baseResult = await executeIteration(browser, baselineContent, true);
-      // 2. Run Optimized (Interleaved to neutralize temperature/server drift)
-      const optResult = await executeIteration(browser, optContent, false);
+      // Counterbalanced order: alternate baseline-first and optimized-first
+      const baselineFirst = run % 2 === 1;
+      const orderTag = baselineFirst ? "baseline_first" : "optimized_first";
+
+      let baseResult;
+      let optResult;
+
+      if (baselineFirst) {
+        baseResult = await executeIteration(browser, baselineContent, "Baseline");
+        optResult = await executeIteration(browser, optContent, "Optimized");
+      } else {
+        optResult = await executeIteration(browser, optContent, "Optimized");
+        baseResult = await executeIteration(browser, baselineContent, "Baseline");
+      }
 
       if (!isWarmup) {
         baselineRaw.push(baseResult);
         optRaw.push(optResult);
+        executionOrder.push(orderTag);
       }
 
       if (run % 5 === 0 || run === TOTAL_RUNS) {
-        console.log(`Completed ${label}:`);
+        console.log(`Completed ${label} (${orderTag}):`);
         console.log(`  Baseline  Cold: ${baseResult.timings.cold_ms.toFixed(1)}ms | Revisit: ${baseResult.timings.warm_revisit_ms.toFixed(1)}ms | Revisit Bytes: ${baseResult.bytes.warm_revisit}`);
         console.log(`  Optimized Cold: ${optResult.timings.cold_ms.toFixed(1)}ms | Revisit: ${optResult.timings.warm_revisit_ms.toFixed(1)}ms | Revisit Bytes: ${optResult.bytes.warm_revisit}`);
       }
@@ -281,7 +334,7 @@ async function main() {
     // Verify Real-time multi-client invalidation
     await verifyLiveCacheInvalidation(browser, optContent);
 
-    // Compute stats across the 30 measured runs
+    // Compute stats across the measured runs
     const baseColdStats = calculateStats(baselineRaw.map((r) => r.timings.cold_ms));
     const optColdStats = calculateStats(optRaw.map((r) => r.timings.cold_ms));
 
@@ -307,11 +360,19 @@ async function main() {
     const totalBaseErrors = baselineRaw.reduce((sum, r) => sum + r.errors.length, 0);
     const totalOptErrors = optRaw.reduce((sum, r) => sum + r.errors.length, 0);
 
+    const errorStatusLabel = (totalBaseErrors === 0 && totalOptErrors === 0)
+      ? "Zero errors"
+      : `Baseline: ${totalBaseErrors} errors, Optimized: ${totalOptErrors} errors`;
+
     const summaryReport = {
       timestamp: new Date().toISOString(),
-      methodology: "Interleaved fresh-context Playwright runs; finite API response bodies counted; SSE stream excluded.",
+      methodology: "Counterbalanced fresh-context Playwright runs (alternating baseline/optimized); finite API response bodies explicitly drained; SSE stream excluded.",
       runs: MEASURED_RUNS,
       warmups: WARMUP_RUNS,
+      counterbalancing: {
+        scheme: "alternating_pair_order",
+        pair_orders: executionOrder,
+      },
       file_hashes: {
         baseline_sha256: baselineSha,
         optimized_sha256: optSha,
@@ -322,7 +383,7 @@ async function main() {
         warm_revisit: { baseline: baseWarmStats, optimized: optWarmStats },
       },
       network_accounting: {
-        warm_revisit_bytes: {
+        warm_revisit_api_response_body_bytes: {
           baseline_avg: avgBaseWarmBytes,
           optimized_avg: avgOptWarmBytes,
           reduction_pct: warmByteReductionPct,
@@ -334,11 +395,12 @@ async function main() {
       },
       headline_metrics: {
         warm_revisit_latency_pct: warmLatencyReductionPct,
-        warm_transferred_bytes_pct: warmByteReductionPct,
+        warm_api_response_body_bytes_pct: warmByteReductionPct,
       },
       errors: {
         baseline: totalBaseErrors,
         optimized: totalOptErrors,
+        status: errorStatusLabel,
       },
       raw_samples: {
         baseline: baselineRaw,
@@ -349,15 +411,15 @@ async function main() {
     const jsonPath = path.join(OUT_DIR, "browser_bench_summary.json");
     await fs.writeFile(jsonPath, JSON.stringify(summaryReport, null, 2));
 
-    const mdContent = `# FlashMarket Browser Performance Benchmark Report (Audited)
+    const mdContent = `# FlashMarket Browser Performance Benchmark Report (Audited & Counterbalanced)
 
 - **Generated**: ${summaryReport.timestamp}
-- **Methodology**: Interleaved execution (${MEASURED_RUNS} measured pairs, ${WARMUP_RUNS} warmups), fresh browser contexts (1440x900).
+- **Methodology**: Counterbalanced interleaved execution (${MEASURED_RUNS} measured pairs, ${WARMUP_RUNS} warmups), alternating condition order per pair, fresh browser contexts (1440x900).
 - **Baseline SHA-256**: \`${baselineSha}\`
 - **Optimized SHA-256**: \`${optSha}\`
 - **Workload Phases**:
   1. \`Cold Load\`: Initial visit to \`/\` (20 items rendered, 600 total in catalog).
-  2. \`Sequence Transitions\`: Navigation through Electronics and Home categories.
+  2. \`Sequence Transitions\`: Navigation through Electronics (cat 1) and Home (cat 14).
   3. \`Warm Revisit\`: Returning to previously viewed category (Electronics).
 
 ## Verified Performance Comparison
@@ -367,24 +429,22 @@ async function main() {
 | **Cold Catalog Ready (Median)** | ${baseColdStats.median_ms} ms (p95: ${baseColdStats.p95_ms} ms) | **${optColdStats.median_ms} ms** (p95: ${optColdStats.p95_ms} ms) | ${(((baseColdStats.median_ms - optColdStats.median_ms) / baseColdStats.median_ms) * 100).toFixed(1)}% |
 | **Sequence Transitions (Median)** | ${baseSeqStats.median_ms} ms | **${optSeqStats.median_ms} ms** | — |
 | **Warm Category Revisit (Median)** | ${baseWarmStats.median_ms} ms (p95: ${baseWarmStats.p95_ms} ms) | **${optWarmStats.median_ms} ms** (p95: ${optWarmStats.p95_ms} ms) | **+${warmLatencyReductionPct}%** (faster) |
-| **Warm Revisit Transferred API Bytes** | ${(avgBaseWarmBytes / 1024).toFixed(1)} KB | **${(avgOptWarmBytes / 1024).toFixed(1)} KB** | **+${warmByteReductionPct}%** (saved) |
+| **Warm Revisit API Response-Body Bytes** | ${(avgBaseWarmBytes / 1024).toFixed(1)} KiB | **${(avgOptWarmBytes / 1024).toFixed(1)} KiB** | **+${warmByteReductionPct}%** (saved) |
 | **Warm Revisit API Requests** | ${avgBaseWarmReqs} reqs | **${avgOptWarmReqs} reqs** | — |
-| **JavaScript / Console Errors** | ${totalBaseErrors} | **${totalOptErrors}** | **Zero errors** |
+| **JavaScript / Console Errors** | ${totalBaseErrors} | **${totalOptErrors}** | **${errorStatusLabel}** |
 
-## Audit Resolutions
+## Audit Methodology Notes
 
-1. **Stale Cache Repopulation & Epochs**:
-   - Integrated \`ClientResponseCache\` with generation/epoch numbers.
-   - If an invalidation occurs while an in-flight request is resolving, the returned payload's epoch does not match current epoch, preventing stale data from repopulating the cache.
-   - Newer requests arriving after an invalidation are blocked from joining obsolete in-flight promises.
+1. **Content & Readiness Assertions**:
+   - Each transition asserts \`aria-busy=false\`, matching category dropdown value, exact result summary count (\`204 results\` / \`198 results\`), matching product metadata category, and 20 rendered rows.
+   - Identical deterministic assertions applied to baseline and optimized conditions without altering runtime behavior.
 
-2. **Unhandled Promise Rejections**:
-   - The promise returned by \`.finally()\` is assigned and returned directly, eliminating unhandled sibling promise rejections on network failures while preserving rejection handling for callers.
+2. **Explicit Response-Body Accounting**:
+   - Every finite response body read is explicitly tracked and awaited via \`Promise.all(pendingBodyReads)\`, eliminating fixed time-based sleeps.
+   - Decoded API response-body bytes are measured separately from transport wire traffic. Long-lived SSE stream is excluded.
 
-3. **Accurate Accounting**:
-   - Each HTTP request is assigned to its execution phase at request **start** (\`page.on('request')\`).
-   - Long-lived Server-Sent Events stream (\`/api/events\`) is excluded from finite body byte totals.
-   - Transition sequence is reported separately from the warm revisit.
+3. **Counterbalanced Pair Execution**:
+   - Alternated condition order (even pairs baseline-first, odd pairs optimized-first) across all 30 measured runs to eliminate thermal and OS cache bias.
 `;
 
     const mdPath = path.join(OUT_DIR, "BROWSER_BENCHMARK_REPORT.md");
@@ -396,6 +456,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error("Benchmark failed with error:", err);
   process.exitCode = 1;
 });

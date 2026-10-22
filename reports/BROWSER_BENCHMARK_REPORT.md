@@ -1,36 +1,34 @@
-# FlashMarket Browser Performance Benchmark Report (Audited)
+# FlashMarket Browser Performance Benchmark Report (Audited & Counterbalanced)
 
-- **Generated**: 2026-10-22T17:00:33.108Z
-- **Methodology**: Interleaved execution (30 measured pairs, 3 warmups), fresh browser contexts (1440x900).
+- **Generated**: 2026-10-22T17:32:27.916Z
+- **Methodology**: Counterbalanced interleaved execution (30 measured pairs, 3 warmups), alternating condition order per pair, fresh browser contexts (1440x900).
 - **Baseline SHA-256**: `5f6276651f80284764d57f67d2861549f28a57049d59b86430e1e5926ff79fe0`
-- **Optimized SHA-256**: `88ec8c56caaa184227f42d72fc8d82b6929b7a7aab9fe432c25f4eb5428773db`
+- **Optimized SHA-256**: `8a4ff62fffec2f0d8d2d94f8baa948c50dbed0be8ae4ea6b251f8cfdcdd63c98`
 - **Workload Phases**:
   1. `Cold Load`: Initial visit to `/` (20 items rendered, 600 total in catalog).
-  2. `Sequence Transitions`: Navigation through Electronics and Home categories.
+  2. `Sequence Transitions`: Navigation through Electronics (cat 1) and Home (cat 14).
   3. `Warm Revisit`: Returning to previously viewed category (Electronics).
 
 ## Verified Performance Comparison
 
 | Metric | Baseline (`app.baseline.js`) | Optimized (`app.js`) | vs Baseline (% Δ) |
 |---|---|---|---|
-| **Cold Catalog Ready (Median)** | 81.88 ms (p95: 113.68 ms) | **81.32 ms** (p95: 98.35 ms) | 0.7% |
-| **Sequence Transitions (Median)** | 228.59 ms | **228.97 ms** | — |
-| **Warm Category Revisit (Median)** | 99.87 ms (p95: 100.67 ms) | **73.97 ms** (p95: 74.69 ms) | **+25.9%** (faster) |
-| **Warm Revisit Transferred API Bytes** | 80.7 KB | **0.0 KB** | **+100%** (saved) |
+| **Cold Catalog Ready (Median)** | 81.89 ms (p95: 114.97 ms) | **82.15 ms** (p95: 113.54 ms) | -0.3% |
+| **Sequence Transitions (Median)** | 228.62 ms | **229.06 ms** | — |
+| **Warm Category Revisit (Median)** | 99.95 ms (p95: 100.52 ms) | **74.02 ms** (p95: 74.75 ms) | **+25.9%** (faster) |
+| **Warm Revisit API Response-Body Bytes** | 80.7 KiB | **0.0 KiB** | **+100%** (saved) |
 | **Warm Revisit API Requests** | 1 reqs | **0 reqs** | — |
 | **JavaScript / Console Errors** | 0 | **0** | **Zero errors** |
 
-## Audit Resolutions
+## Audit Methodology Notes
 
-1. **Stale Cache Repopulation & Epochs**:
-   - Integrated `ClientResponseCache` with generation/epoch numbers.
-   - If an invalidation occurs while an in-flight request is resolving, the returned payload's epoch does not match current epoch, preventing stale data from repopulating the cache.
-   - Newer requests arriving after an invalidation are blocked from joining obsolete in-flight promises.
+1. **Content & Readiness Assertions**:
+   - Each transition asserts `aria-busy=false`, matching category dropdown value, exact result summary count (`204 results` / `198 results`), matching product metadata category, and 20 rendered rows.
+   - Identical deterministic assertions applied to baseline and optimized conditions without altering runtime behavior.
 
-2. **Unhandled Promise Rejections**:
-   - The promise returned by `.finally()` is assigned and returned directly, eliminating unhandled sibling promise rejections on network failures while preserving rejection handling for callers.
+2. **Explicit Response-Body Accounting**:
+   - Every finite response body read is explicitly tracked and awaited via `Promise.all(pendingBodyReads)`, eliminating fixed time-based sleeps.
+   - Decoded API response-body bytes are measured separately from transport wire traffic. Long-lived SSE stream is excluded.
 
-3. **Accurate Accounting**:
-   - Each HTTP request is assigned to its execution phase at request **start** (`page.on('request')`).
-   - Long-lived Server-Sent Events stream (`/api/events`) is excluded from finite body byte totals.
-   - Transition sequence is reported separately from the warm revisit.
+3. **Counterbalanced Pair Execution**:
+   - Alternated condition order (even pairs baseline-first, odd pairs optimized-first) across all 30 measured runs to eliminate thermal and OS cache bias.

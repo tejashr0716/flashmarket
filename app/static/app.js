@@ -573,15 +573,22 @@ $("auth-dialog").addEventListener("close", () => { $("admin-key").value = ""; if
 async function initialize() {
   await Promise.all([loadProducts(), loadStats(), loadReferences().catch((error) => toast(error.message))]);
 }
-initialize();
-let events = connectEvents();
-window.addEventListener("pagehide", () => events.close());
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) {
-    responseCache.invalidate("/api/products");
-    responseCache.invalidate("/api/stats");
-    events = connectEvents();
-    loadProducts();
-    loadStats();
-  }
-});
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  initialize();
+  let events = connectEvents();
+  window.addEventListener("pagehide", () => events.close());
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      responseCache.invalidate("/api/products");
+      responseCache.invalidate("/api/stats");
+      events = connectEvents();
+      loadProducts();
+      loadStats();
+    }
+  });
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { ClientResponseCache, request, responseCache, state };
+}
